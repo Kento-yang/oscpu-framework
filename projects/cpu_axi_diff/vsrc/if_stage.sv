@@ -1,8 +1,19 @@
+`include "rvseed_defines.sv"
 module if_stage(
     input                               clk,
     input                               rst_n,
+//interface for oscpu
+
+	output if_valid,
+	input  if_ready,
+    input  [63:0] if_data_read,
+    output reg [63:0] if_addr,
+    output [1:0] if_size,
+    input  [1:0] if_resp,
+    output reg fetched,
+
 //for mux_pc
-    input  logic   [`PC_WIDTH-1 : 0]         curr_pc, 
+    //input  logic   [`PC_WIDTH-1 : 0]         curr_pc, 
 //for bpu
     input  logic   [`PC_WIDTH-1:0]     ex_pc,
     input  logic                       ex_branch,                          // ex_branch type 
@@ -14,14 +25,42 @@ module if_stage(
 //from data_bypass
     input  logic                       bubble_id_ex,
 //if_id need
-    output        [`INST_WIDTH-1:0]           if_inst  ,
-    output        [`PC_WIDTH-1:0]             if_pc    , 
+    output logic       [`INST_WIDTH-1:0]           if_inst  ,
+    output logic       [`PC_WIDTH-1:0]             if_pc    , 
     output        [`PC_WIDTH-1:0]             next_pc,  // current pc addr
     output logic                       bpu_bubble,
 //handshake signal
     input  ready_next_i,
     output valid_o_next
+
+
 );
+//fetch an instruction
+wire handshake_done = if_valid & if_ready;
+reg [63:0] addr;
+
+// fetch an instruction
+always @( posedge clk ) begin
+  if (rst_n) begin
+    if_pc <= `PC_START;
+    if_addr <= `PC_START;
+    fetched <= 0;
+  end
+  else if ( handshake_done ) begin
+    if_pc <= if_addr;
+    if_addr <= if_addr + 4;
+    fetched <= 1;
+    if_inst <= if_data_read[31:0];
+  end
+  else begin
+    fetched <= 0;
+  end
+end
+
+assign if_valid = 1'b1;
+assign if_size = `SIZE_W;
+
+    //assign if_pc = curr_pc ;
 //------------------------------------------------------------------------------
 //  1.IF 
 //------------------------------------------------------------------------------
@@ -71,8 +110,8 @@ pipehandshake u_if_id_handshake(
     .valid_pre_i  ( 1  ),//for valid_o_next
     .ready_next_i ( ready_next_i ),
 
-    .valid_o_next ( valid_o_next )
-    //.ready_o_pre  (  )
+    .valid_o_next ( valid_o_next ),
+    .ready_o_pre  (  )
 );
 
 endmodule

@@ -1,4 +1,4 @@
-`include "vsrc/rvseed_defines.sv"
+`include "rvseed_defines.sv"
 //`include "vsrc/utils/syncex_pc_reset_async_release.sv"
 //Release 1.0
 //5 pipeline without handshake

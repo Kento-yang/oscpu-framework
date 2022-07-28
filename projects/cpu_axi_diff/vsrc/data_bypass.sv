@@ -4,8 +4,7 @@
 //d.在第一种情况下，如果是上一条是访存指令，即发生加载—使用型冒险。则需要停顿一个周期。
 //e.在发生加载——使用型冒险的时候，如果是load后跟着store指令，并且load指令的rd与store指令的rs1不同而与rs2相同，
 //则不需要停顿，只需要将MEM/WB 寄存器的数据前递到MEM阶段。
-
-`include "vsrc/rvseed_defines.sv"
+`include "rvseed_defines.sv"
 module data_bypass(
     input   [`REG_ADDR_WIDTH-1:0]   reg1_raddr_id                ,
     input   [`REG_ADDR_WIDTH-1:0]   reg2_raddr_id                ,

@@ -1,5 +1,5 @@
 
-`include "defines.v"
+`include "rvseed_defines.sv"
 `define AXI_TOP_INTERFACE(name) io_memAXI_0_``name
 
 module SimTop(
@@ -136,7 +136,7 @@ module SimTop(
 
     axi_rw u_axi_rw (
         .clock                          (clock),
-        .reset                          (reset),
+        .reset_n                          (~reset),
 
         .rw_valid_i                     (if_valid),
         .rw_ready_o                     (if_ready),
@@ -206,9 +206,9 @@ module SimTop(
     wire [1:0] if_size;
     wire [1:0] if_resp;
 
-    cpu u_cpu(
-        .clock                          (clock),
-        .reset                          (reset),
+    top u_cpu(
+        .clk                          (clock),
+        .reset_n                          (~reset),
 
         .if_valid                       (if_valid),
         .if_ready                       (if_ready),

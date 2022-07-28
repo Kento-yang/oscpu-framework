@@ -6,7 +6,7 @@
 //    <--READY-   <--READY-  <--READY-   <--READY-
 
 //ready depends on valid but valid is free, so avoid lock.
-
+`include "rvseed_defines.sv"
 module pipehandshake(
     input clk,
     input rst_n,

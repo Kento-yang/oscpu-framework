@@ -1,3 +1,4 @@
+`include "rvseed_defines.sv"
 module mem_stage(
     input                                     clk      ,
     input                                     rst_n    ,
