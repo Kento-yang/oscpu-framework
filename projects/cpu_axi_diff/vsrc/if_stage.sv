@@ -1,0 +1,78 @@
+module if_stage(
+    input                               clk,
+    input                               rst_n,
+//for mux_pc
+    input  logic   [`PC_WIDTH-1 : 0]         curr_pc, 
+//for bpu
+    input  logic   [`PC_WIDTH-1:0]     ex_pc,
+    input  logic                       ex_branch,                          // ex_branch type 
+    input  logic                       ex_zero,                           // alu result is ex_zero
+    input  logic                       ex_jump,                            // ex_jump type 
+    input  logic   [`DATA_WIDTH-1:0]   ex_imm,                            // immediate  
+    input  logic   [`DATA_WIDTH-1:0]   ex_reg1_rdata,                     // rs1    ex_jalr:rs1+ex_imm
+    input  logic                       ex_jalr,
+//from data_bypass
+    input  logic                       bubble_id_ex,
+//if_id need
+    output        [`INST_WIDTH-1:0]           if_inst  ,
+    output        [`PC_WIDTH-1:0]             if_pc    , 
+    output        [`PC_WIDTH-1:0]             next_pc,  // current pc addr
+    output logic                       bpu_bubble,
+//handshake signal
+    input  ready_next_i,
+    output valid_o_next
+);
+//------------------------------------------------------------------------------
+//  1.IF 
+//------------------------------------------------------------------------------
+    logic                       pc_add_imm_flag;
+    logic   [`PC_WIDTH-1:0]     bpu_pc_update;
+    
+bpu u_bpu(
+    .ex_pc                             (ex_pc                     ),
+    .ex_branch                         (ex_branch                 ),
+    .ex_zero                           (ex_zero                   ),
+    .ex_jump                           (ex_jump                   ),
+    .ex_imm                            (ex_imm                    ),
+    .ex_reg1_rdata                     (ex_reg1_rdata             ),
+    .ex_jalr                           (ex_jalr                   ),
+
+    .pc_add_imm_flag                   (pc_add_imm_flag           ),
+    .bpu_pc_update                     (bpu_pc_update             ),
+    .bubble                            (bpu_bubble                ) 
+);
+
+    logic   [`PC_WIDTH-1:0]     curr_pc_update;
+mux_pc u_mux_pc(
+    .curr_pc                           (curr_pc                   ),
+    .bpu_pc_update                     (bpu_pc_update             ),
+    .pc_add_imm_flag                   (pc_add_imm_flag           ),
+    
+    .curr_pc_update                    (curr_pc_update            ) 
+);
+
+    logic                       pc_wen = ~bubble_id_ex && (ready_next_i && valid_o_next);//shake success and not insert bubble
+    
+pc_update u0_pc_update(
+    .clk                               (clk                       ),// system clock
+    .rst_n                             (rst_n                     ),// active low reset
+    .pc_wen                            (pc_wen                    ),// system enable
+    .curr_pc_update                    (curr_pc_update            ),// current pc addr
+
+    .next_pc                           (next_pc                   ) // used for DPIC INST Fetch
+);
+
+//------------------------------------------------------------------------------
+//  IF-ID HANDSHAKE 
+//------------------------------------------------------------------------------
+pipehandshake u_if_id_handshake(
+    .clk          ( clk          ),
+    .rst_n        ( rst_n        ),
+    .valid_pre_i  ( 1  ),//for valid_o_next
+    .ready_next_i ( ready_next_i ),
+
+    .valid_o_next ( valid_o_next )
+    //.ready_o_pre  (  )
+);
+
+endmodule
