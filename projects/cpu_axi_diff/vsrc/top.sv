@@ -320,7 +320,7 @@ always @(negedge clk) begin
     cmt_wen <= wb_reg_wen;//rd_w_ena;
     cmt_wdest <= {3'd0, wb_reg_waddr};//{3'd0, rd_w_addr};
     cmt_wdata <= wb_reg_wdata;//rd_data;
-    cmt_pc <= if_pc;//pc;
+    cmt_pc <= wb_diff_pc;//pc;
     cmt_inst <= wb_inst;//inst;
     cmt_valid <= inst_valid;//inst_valid;
 
