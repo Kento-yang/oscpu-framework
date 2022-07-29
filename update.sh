@@ -1,5 +1,6 @@
 #!/bin/bash
 
+./build.sh e cpu_axi_diff -c
 cp -r projects/cpu_axi_diff/vsrc/ projects/cpu_axi_diff/build
 if [ $1 = "-b" ]; then
     bash build.sh -e cpu_axi_diff -b -r "-i non-output/cpu-tests" -m "EMU_TRACE=1"                   

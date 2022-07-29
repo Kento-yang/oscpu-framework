@@ -61,9 +61,11 @@ assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
 
     //assign if_pc = curr_pc ;
+    
 //------------------------------------------------------------------------------
 //  1.IF 
 //------------------------------------------------------------------------------
+
     logic                       pc_add_imm_flag;
     logic   [`PC_WIDTH-1:0]     bpu_pc_update;
     
@@ -83,7 +85,7 @@ bpu u_bpu(
 
     logic   [`PC_WIDTH-1:0]     curr_pc_update;
 mux_pc u_mux_pc(
-    .curr_pc                           (curr_pc                   ),
+    .curr_pc                           (if_pc                   ),
     .bpu_pc_update                     (bpu_pc_update             ),
     .pc_add_imm_flag                   (pc_add_imm_flag           ),
     
