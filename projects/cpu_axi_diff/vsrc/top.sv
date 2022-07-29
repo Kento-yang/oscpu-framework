@@ -340,6 +340,7 @@ DifftestInstrCommit DifftestInstrCommit(
   .valid              (cmt_valid),
   .pc                 (cmt_pc),
   .instr              (cmt_inst),
+  .special (),
   .skip               (0),
   .isRVC              (0),
   .scFailed           (0),
