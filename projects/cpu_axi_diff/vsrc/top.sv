@@ -312,10 +312,10 @@ reg [`REG_BUS] regs_diff [0 : 31];
 
 wire inst_valid = fetched;
 
-//initial begin
-//    $monitor("@ %0t : addr is %0h",$time,addr);
-//    $monitor("@ %0t : data is %0h",$time,data);
-//end
+initial begin
+    $monitor("@ %0t : addr is %0h",$time,cmt_wdest);
+    $monitor("@ %0t : data is %0h",$time,cmt_wdata);
+end
 always @(negedge clk) begin
   if (!rst_n) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, trap, trap_code, cycleCnt, instrCnt} <= 0;
