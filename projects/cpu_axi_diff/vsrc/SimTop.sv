@@ -207,8 +207,8 @@ module SimTop(
     wire [1:0] if_resp;
 
     top u_cpu(
-        .clk                          (clock),
-        .reset_n                          (~reset),
+        .clk                            (clock),
+        .reset_n                        (~reset),
 
         .if_valid                       (if_valid),
         .if_ready                       (if_ready),
