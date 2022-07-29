@@ -321,7 +321,7 @@ always @(negedge clk) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, trap, trap_code, cycleCnt, instrCnt} <= 0;
   end
   else if (~trap) begin
-    cmt_wen <= wb_reg_wen;//rd_w_ena;
+    cmt_wen   <= wb_reg_wen;//rd_w_ena;
     cmt_wdest <= {3'd0, wb_reg_waddr};//{3'd0, rd_w_addr};
     cmt_wdata <= wb_reg_wdata;//rd_data;
     cmt_pc <= wb_diff_pc;//pc;
