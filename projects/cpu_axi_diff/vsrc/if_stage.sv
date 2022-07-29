@@ -32,8 +32,6 @@ module if_stage(
 //handshake signal
     input  ready_next_i,
     output valid_o_next
-
-
 );
 //fetch an instruction
 wire handshake_done = if_valid & if_ready;
