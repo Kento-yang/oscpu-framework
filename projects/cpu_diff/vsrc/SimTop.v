@@ -151,6 +151,7 @@ DifftestInstrCommit DifftestInstrCommit(
   .skip               (0),
   .isRVC              (0),
   .scFailed           (0),
+  .special            (),
   .wen                (cmt_wen),
   .wdest              (cmt_wdest),
   .wdata              (cmt_wdata)
