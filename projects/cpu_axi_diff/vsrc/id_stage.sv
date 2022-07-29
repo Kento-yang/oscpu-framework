@@ -14,7 +14,7 @@ module id_stage(
 //from id_ex_reg
     input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr,
     input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr,
-    input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr,                // register write address
+    input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr,                 // register write address
     input logic                              ex_reg_wen,
     input logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
 //from ex_mem   
@@ -56,6 +56,7 @@ module id_stage(
     output logic                              bubble_id_ex,
 //to ex mux_ldst_bp
     output logic                              bp_ld_st_ctrl,
+    output  wire [`REG_BUS] regs[0 : 31],
 //handshake signal
     input valid_pre_i,
     input ready_next_i,
@@ -137,7 +138,8 @@ reg_file u1_reg_file(
 
     .reg1_rdata                        (id_reg1_rdata             ),
     .reg2_rdata                        (id_reg2_rdata             ),
-    .reg10_a0                          (id_reg10_a0               ) 
+    .reg10_a0                          (id_reg10_a0               ),
+    .regs_o             (regs)
 );
 
 

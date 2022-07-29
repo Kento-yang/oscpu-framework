@@ -11,10 +11,11 @@ module reg_file (
     input      [`REG_ADDR_WIDTH-1:0]      reg1_raddr, // register 1 read address
     input      [`REG_ADDR_WIDTH-1:0]      reg2_raddr, // register 2 read address
     
-    output logic [`DATA_WIDTH-1:0]          reg1_rdata, // register 1 read data
+    output logic [`DATA_WIDTH-1:0]          reg1_rdata,  // register 1 read data
     output logic [`DATA_WIDTH-1:0]          reg2_rdata,  // register 2 read data
 
-    output logic [`DATA_WIDTH-1:0]            reg10_a0
+    output logic [`DATA_WIDTH-1:0]            reg10_a0,
+    output wire  [`DATA_WIDTH-1:0] regs_o[0 : 31]        // difftest
 );
 
     logic [`DATA_WIDTH-1:0] reg_f [0:`REG_NUM-1];//64bit * 32个
@@ -50,5 +51,13 @@ module reg_file (
 
 //DPI-C传递寄存器引用
     //initial set_gpr_ptr(reg_f);  // reg_f为通用寄存器的二维数组变量
-    
+
+    //for difftest debug
+    genvar i;
+	generate
+		for (i = 0; i < 32; i = i + 1) begin
+			assign regs_o[i] = (reg_wen & reg_waddr == i & i != 0) ? reg_wdata : reg_f[i];
+		end
+	endgenerate
+
 endmodule
