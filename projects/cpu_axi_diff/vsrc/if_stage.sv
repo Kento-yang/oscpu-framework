@@ -46,15 +46,9 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
   
-  else if ( handshake_done && !pc_add_imm_flag ) begin
-    if_pc <= if_addr;
-    if_addr <= if_addr + 4;
-    fetched <= 1;
-    if_inst <= if_data_read[31:0];
-  end
-  else if ( handshake_done && pc_add_imm_flag ) begin
+  else if ( handshake_done) begin
     if_pc <= next_pc;
-    if_addr <= if_addr + 4;
+    if_addr <= next_pc + 4;
     fetched <= 1;
     if_inst <= if_data_read[31:0];
   end
