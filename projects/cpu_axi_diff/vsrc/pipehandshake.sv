@@ -24,7 +24,7 @@ assign ready_o_pre = ~valid_o_next || ready_next_i;//pre-fetch   A + ~AB = A+B
 always@(posedge clk or negedge rst_n)begin
     if(!rst_n)
         valid_o_next <= 0;
-    else if(ready_next_i) //ready_next_i
+    else if(ready_o_pre) //ready_next_i
         valid_o_next <= valid_pre_i; 
 end
 
