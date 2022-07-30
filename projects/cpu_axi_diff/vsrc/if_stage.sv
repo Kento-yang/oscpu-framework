@@ -42,13 +42,13 @@ reg [63:0] addr;
 always @( posedge clk ) begin
   if (!rst_n) begin
     if_pc <= `PC_START;
-    //if_addr <= `PC_START;
+    if_addr <= `PC_START;
     fetched <= 0;
   end
   
   else if ( handshake_done) begin
-    if_pc <= next_pc;
-    //if_addr <= next_pc + 4;
+    if_pc <= if_addr;
+    if_addr <= if_addr + 4;
     fetched <= 1;
     if_inst <= if_data_read[31:0];
   end
@@ -56,7 +56,7 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
 end
-assign if_addr = (!rst_n) ? `PC_START : next_pc;//update inst from if_addr need sync with if_pc
+//assign if_addr = (!rst_n) ? `PC_START : next_pc;//update inst from if_addr need sync with if_pc
 assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
 
