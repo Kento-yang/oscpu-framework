@@ -316,18 +316,18 @@ wire inst_valid = fetched;
 //    $monitor("cmt_wdest is %h",cmt_wdest);
 //    $monitor("cmt_wdata is %h",cmt_wdata);
 //end
-logic cnt;
+logic real_clk;
 always @(posedge clk) begin
   if (!rst_n) begin
-    cnt <= 0;
+    real_clk <= 0;
   end
   else
-    cnt <= ~cnt;
+    real_clk <= ~real_clk;
 end
 
 
 
-always @(posedge clk) begin
+always @(negedge clk) begin
   if (!rst_n) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, trap, trap_code, cycleCnt, instrCnt} <= 0;
   end
