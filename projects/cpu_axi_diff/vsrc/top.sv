@@ -55,6 +55,7 @@ sync_reset_async_release u_reset_tree(
     logic   valid_if2id = 1;
     logic   fetched;
     logic  [`PC_WIDTH-1:0]   if_pc;
+    //logic pc_add_imm_flag;
 if_stage u_if_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
@@ -81,7 +82,7 @@ if_stage u_if_stage(
     .if_pc                             (if_pc                     ),
     .next_pc                           (next_pc                   ),
     .bpu_bubble                        (bpu_bubble                ), 
-    
+
     .ready_next_i                      (ready_id2if               ),
     .valid_o_next                      (valid_if2id               ) 
 );

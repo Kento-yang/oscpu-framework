@@ -29,6 +29,7 @@ module if_stage(
     output logic       [`PC_WIDTH-1:0]             if_pc    , 
     output        [`PC_WIDTH-1:0]             next_pc,  // current pc addr
     output logic                       bpu_bubble,
+    
 //handshake signal
     input  ready_next_i,
     output valid_o_next
@@ -44,8 +45,15 @@ always @( posedge clk ) begin
     if_addr <= `PC_START;
     fetched <= 0;
   end
-  else if ( handshake_done ) begin
+  
+  else if ( handshake_done && !pc_add_imm_flag ) begin
     if_pc <= if_addr;
+    if_addr <= if_addr + 4;
+    fetched <= 1;
+    if_inst <= if_data_read[31:0];
+  end
+  else if ( handshake_done && pc_add_imm_flag ) begin
+    if_pc <= next_pc;
     if_addr <= if_addr + 4;
     fetched <= 1;
     if_inst <= if_data_read[31:0];
@@ -64,9 +72,9 @@ assign if_size = `SIZE_W;
 //  1.IF 
 //------------------------------------------------------------------------------
 
-    logic                       pc_add_imm_flag;
+
     logic   [`PC_WIDTH-1:0]     bpu_pc_update;
-    
+    logic                       pc_add_imm_flag;//jump flag
 bpu u_bpu(
     .ex_pc                             (ex_pc                     ),
     .ex_branch                         (ex_branch                 ),
