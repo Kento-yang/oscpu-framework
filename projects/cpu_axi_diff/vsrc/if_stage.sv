@@ -38,8 +38,8 @@ wire handshake_done = if_valid & if_ready;
 reg [63:0] addr;
 
 // fetch an instruction
-always @( negedge clk ) begin
-  if (rst_n) begin
+always @( posedge clk ) begin
+  if (!rst_n) begin
     if_pc <= `PC_START;
     if_addr <= `PC_START;
     fetched <= 0;
