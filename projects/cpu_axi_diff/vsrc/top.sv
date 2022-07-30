@@ -54,7 +54,7 @@ sync_reset_async_release u_reset_tree(
     logic   ready_id2if; 
     logic   valid_if2id = 1;
     logic   fetched;
-    logic   if_pc;
+    logic  [`PC_WIDTH-1:0]   if_pc;
 if_stage u_if_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
