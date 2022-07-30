@@ -104,13 +104,16 @@ pc_update u0_pc_update(
 //------------------------------------------------------------------------------
 //  IF-ID HANDSHAKE 
 //------------------------------------------------------------------------------
+//handshake
+logic valid_o_next_r;
+assign valid_o_next = valid_o_next_r && fetched; 
 pipehandshake u_if_id_handshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
     .valid_pre_i  ( 1  ),//for valid_o_next
     .ready_next_i ( ready_next_i ),
 
-    .valid_o_next ( valid_o_next ),
+    .valid_o_next ( valid_o_next_r ),
     .ready_o_pre  (  )
 );
 
