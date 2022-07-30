@@ -7,7 +7,7 @@ module if_stage(
 	output if_valid,
 	input  if_ready,
     input  [63:0] if_data_read,
-    output reg [63:0] if_addr,
+    output logic [63:0] if_addr,
     output [1:0] if_size,
     input  [1:0] if_resp,
     output reg fetched,
@@ -42,13 +42,13 @@ reg [63:0] addr;
 always @( posedge clk ) begin
   if (!rst_n) begin
     if_pc <= `PC_START;
-    if_addr <= `PC_START;
+    //if_addr <= `PC_START;
     fetched <= 0;
   end
   
   else if ( handshake_done) begin
     if_pc <= next_pc;
-    if_addr <= next_pc + 4;
+    //if_addr <= next_pc + 4;
     fetched <= 1;
     if_inst <= if_data_read[31:0];
   end
@@ -56,7 +56,7 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
 end
-
+assign if_addr = (!rst_n) ? `PC_START : next_pc;//update inst from if_addr need sync with if_pc
 assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
 
@@ -65,8 +65,6 @@ assign if_size = `SIZE_W;
 //------------------------------------------------------------------------------
 //  1.IF 
 //------------------------------------------------------------------------------
-
-
     logic   [`PC_WIDTH-1:0]     bpu_pc_update;
     logic                       pc_add_imm_flag;//jump flag
 bpu u_bpu(
