@@ -313,7 +313,7 @@ reg [`REG_BUS] regs_diff [0 : 31];
 wire inst_valid; //= fetched;
 
 
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0);
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched;
 //initial begin
 //    $monitor("cmt_wdest is %h",cmt_wdest);
 //    $monitor("cmt_wdata is %h",cmt_wdata);
