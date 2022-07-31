@@ -121,6 +121,7 @@ if_stage u_if_stage(
      logic                              bp_ld_st_ctrl;
 //handshake
 logic ready_ex2id ,valid_id2ex;
+
 wire [`REG_BUS] regs[0 : 31];//for difftest
 id_stage u_id_stage(
     .clk                               (clk                       ),
