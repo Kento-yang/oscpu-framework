@@ -53,6 +53,7 @@ always @( posedge clk ) begin
     if_inst <= if_data_read[31:0];
   end
   else begin
+    if_addr <= next_pc;
     fetched <= 0;
   end
 end
