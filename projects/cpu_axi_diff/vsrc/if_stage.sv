@@ -46,7 +46,7 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
   
-  else if ( handshake_done) begin
+  else if ( handshake_done && !bpu_bubble ) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
     if_inst <= if_data_read[31:0];
