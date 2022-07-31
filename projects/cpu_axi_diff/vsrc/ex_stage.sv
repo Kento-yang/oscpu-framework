@@ -54,7 +54,7 @@ module ex_stage(
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen = valid_id2ex && ready_ex2id;//shake success with id_stage
+    logic                               pipe_wen = !bpu_bubble && valid_id2ex && ready_ex2id;//shake success with id_stage
 
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
