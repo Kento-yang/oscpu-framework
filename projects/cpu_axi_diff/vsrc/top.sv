@@ -291,7 +291,7 @@ wb_stage u_wb_stage(
     .wb_reg_wen                        (wb_reg_wen                ),
 
     .valid_pre_i                       (valid_mem2wb               ),
-    .ready_next_i                      (               ),
+    .ready_next_i                      ( 1             ),
     .valid_o_next                      (               ),
     .ready_o_pre                       (ready_wb2mem               ) 
 );
@@ -314,7 +314,7 @@ reg [`REG_BUS] regs_diff_npc [0 : 31];
 wire inst_valid; //= fetched;
 
 
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched;
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0);
 //initial begin
 //    $monitor("cmt_wdest is %h",cmt_wdest);
 //    $monitor("cmt_wdata is %h",cmt_wdata);
