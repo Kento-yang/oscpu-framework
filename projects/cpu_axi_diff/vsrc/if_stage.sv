@@ -31,8 +31,8 @@ module if_stage(
     output logic                       bpu_bubble,
     
 //handshake signal
-    input  ready_next_i,
-    output valid_o_next
+    input  ready_id2if,
+    output valid_if2id
 );
 //fetch an instruction
 wire handshake_done = if_valid & if_ready;
@@ -92,7 +92,7 @@ mux_pc u_mux_pc(
     .curr_pc_update                    (curr_pc_update            ) 
 );
 
-    logic                       pc_wen = ~bubble_id_ex && (ready_next_i && valid_o_next);//shake success and not insert bubble
+    logic                       pc_wen = ~bubble_id_ex && (ready_id2if && valid_if2id);//shake success and not insert bubble
     
 pc_update u0_pc_update(
     .clk                               (clk                       ),// system clock
@@ -108,12 +108,12 @@ pc_update u0_pc_update(
 //------------------------------------------------------------------------------
 //handshake
 logic valid_o_next_r;
-assign valid_o_next = valid_o_next_r && fetched; 
+assign valid_if2id = valid_o_next_r && fetched; 
 pipehandshake u_if_id_handshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( 1  ),//for valid_o_next
-    .ready_next_i ( ready_next_i ),
+    .valid_pre_i  ( 1  ),//for valid_if2id
+    .ready_next_i ( ready_id2if ),
 
     .valid_o_next ( valid_o_next_r ),
     .ready_o_pre  (  )

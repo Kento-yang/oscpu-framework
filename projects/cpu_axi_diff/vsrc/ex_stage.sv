@@ -44,17 +44,17 @@ module ex_stage(
     output            [`PC_WIDTH-1:0]             ex_diff_pc,
     output logic                                ex_alu_res_valid,//div res valid signal.
 //handshake signal
-    input valid_pre_i,
-    input ready_next_i,
+    input valid_id2ex,
+    input ready_mem2ex,
     //input data_in, 
     
-    output valid_o_next,
-    output ready_o_pre
+    output valid_ex2mem,
+    output ready_ex2id
 );
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen = valid_pre_i && ready_o_pre;//shake success with id_stage
+    logic                               pipe_wen = valid_id2ex && ready_ex2id;//shake success with id_stage
 
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
@@ -152,7 +152,7 @@ alu u0_alu(
     .alu_op                            (ex_alu_op                 ),
     .alu_src1                          (ex_alu_src1               ),
     .alu_src2                          (ex_alu_src2               ),
-    .div_ready_next_i(ready_next_i),
+    .div_ready_next_i(ready_mem2ex),
     //.start                             (div_start                 ), 
 
     .alu_res                           (ex_alu_res                ),
@@ -175,14 +175,14 @@ mux_ldst_bp#(
 
 //handshake
 logic valid_o_next_r, ready_o_pre_r;
-assign valid_o_next = /*ex_alu_res_valid &&*/ valid_o_next_r && alu_valid_o_next; /*&& div_valid_o_next*/;//alu caculate finished and handshake valid = 1. 
-assign ready_o_pre =  /*ex_alu_res_valid &&*/ ready_o_pre_r &&  alu_valid_o_next;//ex_alu_res_valid && ready_o_pre_r
+assign valid_ex2mem = /*ex_alu_res_valid &&*/ valid_o_next_r && alu_valid_o_next; /*&& div_valid_o_next*/;//alu caculate finished and handshake valid = 1. 
+assign ready_ex2id =  /*ex_alu_res_valid &&*/ ready_o_pre_r &&  alu_valid_o_next;//ex_alu_res_valid && ready_o_pre_r
 
 pipehandshake u_pipehandshake(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
-    .valid_pre_i                       (valid_pre_i               ),
-    .ready_next_i                      (ready_next_i              ),
+    .valid_pre_i                       (valid_id2ex               ),
+    .ready_next_i                      (ready_mem2ex              ),
     
     .valid_o_next                      (valid_o_next_r          ),
     .ready_o_pre                       (ready_o_pre_r               ) 

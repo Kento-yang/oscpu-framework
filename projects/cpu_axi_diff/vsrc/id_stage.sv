@@ -3,7 +3,7 @@ module id_stage(
     input                                     clk      ,
     input                                     rst_n    ,
 
-    input                                     pipe_wen ,
+    //input                                     pipe_wen ,
     //input                                     bubble,
 //from IF bpu
     input logic                       bpu_bubble,
@@ -58,12 +58,12 @@ module id_stage(
     output logic                              bp_ld_st_ctrl,
     output  wire [`REG_BUS] regs[0 : 31],
 //handshake signal
-    input valid_pre_i,
-    input ready_next_i,
+    input valid_if2id,
+    input ready_ex2id,
     //input data_in, 
     
-    output valid_o_next,
-    output ready_o_pre
+    output valid_id2ex,
+    output ready_id2if
     //output data_out 
 
 );
@@ -73,13 +73,14 @@ module id_stage(
 
     //logic   [`PC_WIDTH-1:0]     if_pc    ;
     //logic   [`PC_WIDTH-1:0]     id_pc    ;
-    //logic pipe_wen = ~bubble_id_ex && valid_pre_i && ready_o_pre;
+    //logic pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
 
-    
+    logic pipe_wen;
+    assign pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
-    .pipe_wen                          (~bubble_id_ex && valid_pre_i && ready_o_pre     ),//if bypass bubble,if_id pipe stall
+    .pipe_wen                          (pipe_wen),//if bypass bubble,if_id pipe stall
     .bubble                            (bpu_bubble                ),//from bpu
 
     .if_inst                           (if_inst                   ),
@@ -123,9 +124,6 @@ imm_gen u1_imm_gen(
 
     logic   [`DATA_WIDTH-1:0]          id_reg1_rdata;
     logic   [`DATA_WIDTH-1:0]          id_reg2_rdata;
-    logic    [`DATA_WIDTH-1:0]         id_reg10_a0;
-
-    assign reg10_a0 = id_reg10_a0;
 
 reg_file u1_reg_file(
     .clk                               (clk                       ),
@@ -138,8 +136,8 @@ reg_file u1_reg_file(
 
     .reg1_rdata                        (id_reg1_rdata             ),
     .reg2_rdata                        (id_reg2_rdata             ),
-    .reg10_a0                          (id_reg10_a0               ),
-    .regs_o             (regs)
+
+    .regs_o                            (regs)
 );
 
 
@@ -218,11 +216,11 @@ pipehandshake u1_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
 
-    .valid_pre_i  ( valid_pre_i  ),
-    .ready_next_i ( ready_next_i ),
+    .valid_pre_i  ( valid_if2id  ),
+    .ready_next_i ( ready_ex2id ),
 
-    .valid_o_next ( valid_o_next ),
-    .ready_o_pre  ( ready_o_pre  )
+    .valid_o_next ( valid_id2ex ),
+    .ready_o_pre  ( ready_id2if  )
 );
 
 endmodule

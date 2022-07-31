@@ -22,18 +22,18 @@ module mem_stage(
 
 
   //handshake signal
-    input valid_pre_i,
-    input ready_next_i,
+    input valid_ex2mem,
+    input ready_wb2mem,
     //input data_in, 
     
-    output valid_o_next,
-    output ready_o_pre
+    output valid_mem2wb,
+    output ready_mem2ex
 
 );
 //------------------------------------------------------------------------------
 //  EX-MEM REG  
 //------------------------------------------------------------------------------
-   logic                               pipe_wen = valid_pre_i && ready_o_pre;
+   logic                               pipe_wen = valid_ex2mem && ready_mem2ex;
    //logic    [`DATA_WIDTH-1:0]           ex_alu_res;
    logic    [`DATA_WIDTH-1:0]           mem_reg2_rdata;
 
@@ -78,10 +78,10 @@ lsu u0_lsu(
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( valid_pre_i  ),
-    .ready_next_i ( ready_next_i ),
-    .valid_o_next ( valid_o_next ),
-    .ready_o_pre  ( ready_o_pre  )
+    .valid_pre_i  ( valid_ex2mem  ),
+    .ready_next_i ( ready_wb2mem ),
+    .valid_o_next ( valid_mem2wb ),
+    .ready_o_pre  ( ready_mem2ex  )
 );
 
 endmodule

@@ -17,18 +17,18 @@ module wb_stage(
     output    logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr,                  // register write address
     output     logic                              wb_reg_wen,
 //handshake signal
-    input valid_pre_i,
+    input valid_mem2wb,
     input ready_next_i,
     //input data_in, 
     
     output valid_o_next,
-    output ready_o_pre
+    output ready_wb2mem
 
 );
 //------------------------------------------------------------------------------
 //  EX-WB REG  
 //------------------------------------------------------------------------------
-    logic                              pipe_wen = valid_pre_i && ready_o_pre;
+    logic                              pipe_wen = valid_mem2wb && ready_wb2mem;
     //logic  [`DATA_WIDTH-1:0]           mem_regld    ;
 
  
@@ -76,9 +76,9 @@ wbu u0_wbu(
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( valid_pre_i  ),
+    .valid_pre_i  ( valid_mem2wb  ),
     .ready_next_i ( ready_next_i ),
     .valid_o_next ( valid_o_next ),
-    .ready_o_pre  ( ready_o_pre  )
+    .ready_o_pre  ( ready_wb2mem  )
 );
 endmodule

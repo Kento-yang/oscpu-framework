@@ -14,14 +14,14 @@ module reg_file (
     output logic [`DATA_WIDTH-1:0]          reg1_rdata,  // register 1 read data
     output logic [`DATA_WIDTH-1:0]          reg2_rdata,  // register 2 read data
 
-    output logic [`DATA_WIDTH-1:0]            reg10_a0,
-    output wire  [`DATA_WIDTH-1:0] regs_o[0 : 31]        // difftest
+   // output logic [`DATA_WIDTH-1:0]            reg10_a0,
+    output wire  [`DATA_WIDTH-1:0]          regs_o[0 : 31]        // difftest
 );
 
     logic [`DATA_WIDTH-1:0] reg_f [0:`REG_NUM-1];//64bit * 32个
 
     //good bad trap judge
-    assign reg10_a0 = reg_f[10];
+    //assign reg10_a0 = reg_f[10];
 
 
     //reg write

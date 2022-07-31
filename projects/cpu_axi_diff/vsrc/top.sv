@@ -3,22 +3,15 @@
 //handshake top
 
 module top (
-    input                                        clk                        ,
-    input                                        reset_n                    ,
-    //input              [`INST_WIDTH-1:0]         inst                       ,//for DPIC read inst
-    //input     logic    [`PC_WIDTH-1 : 0]         curr_pc                    ,
-
+    input                               clk                        ,
+    input                               reset_n                    ,
 //interface for simtop
-    output                              if_valid,
-    input                               if_ready,
-    input  [63:0]                       if_data_read,
-    output [63:0]                       if_addr,
-    output [1:0]                        if_size,
-    input  [1:0]                        if_resp
-
-
-    //output    logic    [`PC_WIDTH-1 : 0]         next_pc                    ,//for DPIC update
-    //output    logic    [`DATA_WIDTH-1:0]         reg10_a0                    
+    output                              if_valid                   ,
+    input                               if_ready                   ,
+    input              [  63:0]         if_data_read               ,
+    output             [  63:0]         if_addr                    ,
+    output             [   1:0]         if_size                    ,
+    input              [   1:0]         if_resp                                
 );
     logic    [`PC_WIDTH-1 : 0]         next_pc;           
     logic    [`DATA_WIDTH-1:0]         reg10_a0;                    
@@ -34,7 +27,6 @@ module top (
                                 ex_inst     , 
                                 mem_inst    , 
                                 wb_inst     ;
-    //assign if_inst = inst;
 //------------------------------------------------------------------------------
 // Reset_tree.
 //------------------------------------------------------------------------------
@@ -51,8 +43,8 @@ sync_reset_async_release u_reset_tree(
 //------------------------------------------------------------------------------
     logic                       bubble_id_ex;
 //handshake
-    logic   ready_id2if; 
-    logic   valid_if2id = 1;
+    logic   ready_id2if;
+    logic   valid_if2id;
     logic   fetched;
     logic  [`PC_WIDTH-1:0]   if_pc;
     //logic pc_add_imm_flag;
@@ -83,13 +75,13 @@ if_stage u_if_stage(
     .next_pc                           (next_pc                   ),
     .bpu_bubble                        (bpu_bubble                ), 
 
-    .ready_next_i                      (ready_id2if               ),
-    .valid_o_next                      (valid_if2id               ) 
+    .ready_id2if                      (ready_id2if               ),
+    .valid_if2id                      (valid_if2id               ) 
 );
 //------------------------------------------------------------------------------
 //  2.ID STAGE
 //------------------------------------------------------------------------------
-    logic pipe_wen_id;
+    //logic pipe_wen_id;
     logic bpu_bubble;
     //from wbu
     logic                              wb_reg_wen;//from mem_wb
@@ -133,7 +125,7 @@ wire [`REG_BUS] regs[0 : 31];//for difftest
 id_stage u_id_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
-    .pipe_wen                          (pipe_wen_id                  ),
+    //.pipe_wen                          (pipe_wen_id                  ),
     //.bubble                            (bubble                    ),
     .bpu_bubble                        (bpu_bubble                ),
     .wb_reg_wen                        (wb_reg_wen                ),
@@ -175,10 +167,10 @@ id_stage u_id_stage(
     .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
 
     .regs                              (regs                      ),//for difftest
-    .valid_pre_i                       (valid_if2id               ),
-    .ready_next_i                      (ready_ex2id              ),
-    .valid_o_next                      (valid_id2ex              ),
-    .ready_o_pre                       (ready_id2if             ) 
+    .valid_if2id                       (valid_if2id               ),
+    .ready_ex2id                       (ready_ex2id              ),
+    .valid_id2ex                       (valid_id2ex              ),
+    .ready_id2if                       (ready_id2if             ) 
 );
 //------------------------------------------------------------------------------
 //  3.EX STAGE
@@ -235,10 +227,10 @@ ex_stage u_ex_stage(
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_alu_res_valid                  (ex_alu_res_valid),//div res valid signal.
 
-    .valid_pre_i                       (valid_id2ex               ),
-    .ready_next_i                      (ready_mem2ex              ),
-    .valid_o_next                      (valid_ex2mem              ),
-    .ready_o_pre                       (ready_ex2id  ) 
+    .valid_id2ex                       (valid_id2ex               ),
+    .ready_mem2ex                      (ready_mem2ex              ),
+    .valid_ex2mem                      (valid_ex2mem              ),
+    .ready_ex2id                       (ready_ex2id  ) 
 );
 
 //------------------------------------------------------------------------------
@@ -265,10 +257,10 @@ mem_stage u_mem_stage(
     .mem_diff_pc                       (mem_diff_pc               ),
     .mem_regld                         (mem_regld                 ),
 
-    .valid_pre_i                       (valid_ex2mem               ),
-    .ready_next_i                      (ready_wb2mem              ),
-    .valid_o_next                      (valid_mem2wb              ),
-    .ready_o_pre                       (ready_mem2ex               ) 
+    .valid_ex2mem                       (valid_ex2mem               ),
+    .ready_wb2mem                      (ready_wb2mem              ),
+    .valid_mem2wb                      (valid_mem2wb              ),
+    .ready_mem2ex                       (ready_mem2ex               ) 
 );
 //------------------------------------------------------------------------------
 //  5.WB STAGE
@@ -290,10 +282,10 @@ wb_stage u_wb_stage(
     .wb_reg_waddr                      (wb_reg_waddr              ),
     .wb_reg_wen                        (wb_reg_wen                ),
 
-    .valid_pre_i                       (valid_mem2wb               ),
+    .valid_mem2wb                       (valid_mem2wb               ),
     .ready_next_i                      ( 1             ),
     .valid_o_next                      (               ),
-    .ready_o_pre                       (ready_wb2mem               ) 
+    .ready_wb2mem                       (ready_wb2mem               ) 
 );
 
 //------------------------------------------------------------------------------
@@ -315,6 +307,7 @@ wire inst_valid; //= fetched;
 
 //commit need 
 assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched;
+
 
 //initial begin
 //    $monitor("cmt_wdest is %h",cmt_wdest);
