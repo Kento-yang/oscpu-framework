@@ -137,7 +137,7 @@ module SimTop(
     axi_rw u_axi_rw (
         .clock                          (clock),
         .reset_n                          (~reset),
-
+/*
         .rw_valid_i                     (if_valid),
         .rw_ready_o                     (if_ready),
         .rw_req_i                       (req),
@@ -145,7 +145,27 @@ module SimTop(
         .data_write_i                   (data_write),
         .rw_addr_i                      (if_addr),
         .rw_size_i                      (if_size),
-        .rw_resp_o                      (if_resp),
+        .rw_resp_o                      (if_resp),*/
+//IF
+        .m0_rw_valid_i                  (if_valid),
+        .m0_rw_ready_o                  (if_ready),
+        .m0_rw_req_i                    (if_req),
+        .m0_data_read_o                 (if_data_read),
+        //.m0_data_write_i                (),//IF STAGE no write data
+        .m0_rw_addr_i                   (if_addr),
+        .m0_rw_size_i                   (if_size),
+        .m0_rw_resp_o                   (if_resp),
+//MEM                   
+        .m1_rw_valid_i                  (mem_valid),
+        .m1_rw_ready_o                  (mem_ready),
+        .m1_rw_req_i                    (mem_req),//1：write to mem 0：read from mem
+        .m1_data_read_o                 (mem_data_read),
+        .m1_data_write_i                (mem_data_write),
+
+        .m1_rw_addr_i                   (mem_addr),
+        .m1_rw_size_i                   (mem_size),
+        .m1_rw_resp_o                   (mem_resp),
+        .m1_write_mask_i                (mem_wmask),//for write'
 
         .axi_aw_ready_i                 (aw_ready),
         .axi_aw_valid_o                 (aw_valid),
@@ -197,25 +217,46 @@ module SimTop(
         .axi_r_user_i                   (r_user)
     );
 
+
+    //connect AXI_RW and CPU
     wire if_valid;
     wire if_ready;
-    wire req = `REQ_READ;
+    wire if_req = `REQ_READ;
     wire [63:0] if_data_read;
-    wire [63:0] data_write;
     wire [63:0] if_addr;
     wire [1:0] if_size;
     wire [1:0] if_resp;
 
+    wire mem_valid;
+    wire mem_ready;
+    wire mem_req ;
+    wire [63:0] mem_data_read;
+    wire [63:0] mem_data_write;
+    wire [7:0] mem_wmask;
+    wire [63:0] mem_addr;
+    wire [1:0] mem_size;
+    wire [1:0] mem_resp;
     top u_cpu(
         .clk                            (clock),
         .reset_n                        (~reset),
-
+//IF
         .if_valid                       (if_valid),
         .if_ready                       (if_ready),
         .if_data_read                   (if_data_read),
         .if_addr                        (if_addr),
         .if_size                        (if_size),
-        .if_resp                        (if_resp)
+        .if_resp                        (if_resp),
+//MEM
+        .mem_valid                      (mem_valid),
+        .mem_ready                      (mem_ready),
+        .mem_rw_req                     (mem_req),
+        .mem_data_read                  (mem_data_read),
+        .mem_data_write                 (mem_data_write),
+        .mem_addr                       (mem_addr),
+        .mem_size                       (mem_size),
+        .mem_resp                       (mem_resp),
+
+        .mem_wmask                      (mem_wmask)
     );
 
 

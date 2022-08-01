@@ -59,7 +59,7 @@ module axi_rw # (
 )(
     input                               clock,
     input                               reset_n,
-
+/*Origin Signal
 	input                               rw_valid_i,
 	output                              rw_ready_o,
     input                               rw_req_i,
@@ -68,7 +68,30 @@ module axi_rw # (
     input  [AXI_DATA_WIDTH:0]           rw_addr_i,
     input  [1:0]                        rw_size_i,
     output [1:0]                        rw_resp_o,
+*/
+//for arbitration
+    //IF interface (read only)
+    input                                  m0_rw_valid_i,
+    output                                 m0_rw_ready_o,
+    input                                  m0_rw_req_i,
+    output [RW_DATA_WIDTH-1:0]             m0_data_read_o,
+    //input  [RW_DATA_WIDTH:0]               m0_data_write_i,
+    input  [AXI_DATA_WIDTH-1:0]            m0_rw_addr_i,
+    input  [1:0]                           m0_rw_size_i,
+    output [1:0]                           m0_rw_resp_o,
 
+    //MEM interface r/w
+    input                                   m1_rw_valid_i,
+    output                                  m1_rw_ready_o,
+    input                                   m1_rw_req_i,//1：write to mem 0：read from mem
+    output [RW_DATA_WIDTH-1:0]              m1_data_read_o,
+    input  [RW_DATA_WIDTH-1:0]              m1_data_write_i,
+    input  [AXI_DATA_WIDTH-1:0]             m1_rw_addr_i,
+    input  [1:0]                            m1_rw_size_i,
+    output [1:0]                            m1_rw_resp_o,
+
+    input  [7:0]                            m1_write_mask_i,//for write
+//arbitration end
     // Advanced eXtensible Interface
     input                               axi_aw_ready_i,
     output                              axi_aw_valid_o,
@@ -93,7 +116,7 @@ module axi_rw # (
     
     output                              axi_b_ready_o,
     input                               axi_b_valid_i,
-    input  [1:0]                        axi_b_resp_i,
+    input  [1:0]                        axi_b_resp_i,//写响应通道
     input  [AXI_ID_WIDTH-1:0]           axi_b_id_i,
     input  [AXI_USER_WIDTH-1:0]         axi_b_user_i,
 
@@ -113,13 +136,61 @@ module axi_rw # (
     
     output                              axi_r_ready_o,
     input                               axi_r_valid_i,
-    input  [1:0]                        axi_r_resp_i,
+    input  [1:0]                        axi_r_resp_i,//读响应信号
     input  [AXI_DATA_WIDTH-1:0]         axi_r_data_i,
     input                               axi_r_last_i,
     input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
     input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
+//Origin Signal for arbitor transport
+    logic                              rw_valid_i;
+	logic                              rw_ready_o;
+    logic                              rw_req_i;
+    logic [RW_DATA_WIDTH:0]            data_read_o;
+    logic [RW_DATA_WIDTH:0]            data_write_i;
+    logic [AXI_DATA_WIDTH:0]           rw_addr_i;
+    logic [1:0]                        rw_size_i;
+    logic [1:0]                        rw_resp_o;
+//--------------------------Arbitration------------------------------------------
+    //arbitrate m1 > m0
+    localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
+    logic grant;
 
+    always @(posedge clock) begin
+        if(r_state == R_STATE_IDLE)
+            grant <= (m1_rw_valid_i)? MASTER_1 : (m0_rw_valid_i)? MASTER_0 : 'b0;
+        else if(w_state == W_STATE_ADDR)
+            grant <= (m1_rw_valid_i)? MASTER_1 : 'b0;
+    end
+
+    always @(*) begin
+        rw_valid_i = 1'b0;
+        rw_req_i = 1'b0;
+        data_write_i = 'b0;
+        rw_addr_i = 'b0;
+        rw_size_i = 'b0;
+    //priority m1 > m0
+        if(m1_rw_valid_i == 1'b1) begin
+            rw_valid_i = m1_rw_valid_i;
+            rw_req_i = m1_rw_req_i;
+            data_write_i = m1_data_write_i;
+            rw_addr_i = m1_rw_addr_i;
+            rw_size_i = m1_rw_size_i;
+        end
+        else if(m0_rw_valid_i) begin
+            rw_valid_i = m0_rw_valid_i;
+            rw_req_i = m0_rw_req_i;
+            rw_addr_i = m0_rw_addr_i;
+            rw_size_i = m0_rw_size_i;
+        end
+    end
+    assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready : 1'b0;          
+    assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready;
+    assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
+    assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
+    assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
+    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    
+//----------------------------------------------------------------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
     wire r_trans    = rw_req_i == `REQ_READ;
     wire w_valid    = rw_valid_i & w_trans;
@@ -134,7 +205,8 @@ module axi_rw # (
 
     wire w_done     = w_hs & axi_w_last_o;
     wire r_done     = r_hs & axi_r_last_i;
-    wire trans_done = w_trans ? b_hs : r_done;
+    wire trans_done = w_trans ? b_hs : r_done;//for write transactions:BRESP[1:0]
+                                              //for read  transactions:RRESP[1:0]
 
     
     // ------------------State Machine------------------
@@ -179,7 +251,6 @@ module axi_rw # (
         end
     end
 
-
     // ------------------Number of transmission------------------
     reg [7:0] len;
     wire len_reset      = !reset_n | (w_trans & w_state_idle) | (r_trans & r_state_idle);
@@ -217,7 +288,7 @@ module axi_rw # (
     wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;
 
     wire [7:0] axi_len      = aligned ? TRANS_LEN - 1 : {{7{1'b0}}, overstep};
-    wire [2:0] axi_size     = AXI_SIZE[2:0];
+    wire [2:0] axi_size     = {1'b0,rw_size_i};//AXI_SIZE[2:0];
     
     wire [AXI_ADDR_WIDTH-1:0] axi_addr          = {rw_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
     wire [OFFSET_WIDTH-1:0] aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {rw_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
@@ -259,13 +330,25 @@ module axi_rw # (
     end
     assign rw_resp_o      = rw_resp;
 
-
     // ------------------Write Transaction------------------
+    //Write address channel signals
+    assign axi_aw_valid_o   = w_state_addr & w_valid;
+    assign axi_aw_addr_o    = rw_addr_i;
+    assign axi_aw_id_o      = axi_id;
+    assign axi_aw_len_o     = axi_len;
+    assign axi_aw_size_o    = {1'b0,rw_size_i};
+    //assign axi_aw_burst_o   = `YSYX210366_AXI_BURST_TYPE_INCR;
 
+    //Write data channel signals
+    assign axi_w_valid_o  = w_state_write;
+    assign axi_w_data_o   = data_write_i;        //assume: YSYX210366_AXI_DATA_WIDTH = YSYX210366_RW_DATA_WIDTH
+    assign axi_w_strb_o   = m1_write_mask_i;
+    assign axi_w_last_o   = len == axi_len;
 
-    
+    //Write response channel signals
+    assign axi_b_ready_o = w_state_resp;
+
     // ------------------Read Transaction------------------
-
     // Read address channel signals
     assign axi_ar_valid_o   = r_state_addr;
     assign axi_ar_addr_o    = axi_addr;

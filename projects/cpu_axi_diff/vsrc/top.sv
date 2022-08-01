@@ -5,13 +5,23 @@
 module top (
     input                               clk                        ,
     input                               reset_n                    ,
-//interface for simtop
+//IF INTTERFACE
     output                              if_valid                   ,
     input                               if_ready                   ,
     input              [  63:0]         if_data_read               ,
     output             [  63:0]         if_addr                    ,
     output             [   1:0]         if_size                    ,
-    input              [   1:0]         if_resp                                
+    input              [   1:0]         if_resp                    ,
+//MEM INTTERFACE
+    output                              mem_valid                   ,
+    input                               mem_ready                   ,
+    output                              mem_rw_req                  ,
+    input              [  63:0]         mem_data_read               ,
+    output             [  63:0]         mem_data_write              ,
+    output             [  63:0]         mem_addr                    ,
+    output             [   1:0]         mem_size                    ,
+    input              [   1:0]         mem_resp                    ,
+    output             [   7:0]         mem_wmask                   
 );
     logic    [`PC_WIDTH-1 : 0]         next_pc;           
     logic    [`DATA_WIDTH-1:0]         reg10_a0;                    
@@ -249,6 +259,16 @@ mem_stage u_mem_stage(
     .ex_regst                          (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
     .ex_diff_pc                        (ex_diff_pc                ),
+//r/w data memory from/to axi_rw
+    .mem_valid_o                       (mem_valid                 ),
+    .mem_ready_i                       (mem_ready                 ),
+    .mem_rw_req_o                      (mem_rw_req                ),//1
+    .mem_data_read_i                   (mem_data_read             ),
+    .mem_data_write_o                  (mem_data_write            ),
+    .mem_rw_addr_i                     (mem_addr                  ),
+    .mem_rw_size_o                     (mem_size                  ),
+    .mem_rw_resp_i                     (mem_resp                  ),
+    .mem_write_mask_o                  (mem_wmask                 ),
 
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
@@ -258,10 +278,10 @@ mem_stage u_mem_stage(
     .mem_diff_pc                       (mem_diff_pc               ),
     .mem_regld                         (mem_regld                 ),
 
-    .valid_ex2mem                       (valid_ex2mem               ),
+    .valid_ex2mem                      (valid_ex2mem              ),
     .ready_wb2mem                      (ready_wb2mem              ),
     .valid_mem2wb                      (valid_mem2wb              ),
-    .ready_mem2ex                       (ready_mem2ex               ) 
+    .ready_mem2ex                      (ready_mem2ex              ) 
 );
 //------------------------------------------------------------------------------
 //  5.WB STAGE

@@ -4,13 +4,13 @@ module if_stage(
     input                               rst_n,
 //interface for oscpu
 
-	output if_valid,
-	input  if_ready,
-    input  [63:0] if_data_read,
-    output logic [63:0] if_addr,
+	  output if_valid,
+	  input  if_ready,
+    input  [`AXI_DATA_WIDTH:0] if_data_read,
+    output logic [`AXI_ADDR_WIDTH:0] if_addr,
     output [1:0] if_size,
     input  [1:0] if_resp,
-    output reg fetched,
+    output reg fetched,//for difftest
 
 //for mux_pc
     //input  logic   [`PC_WIDTH-1 : 0]         curr_pc, 

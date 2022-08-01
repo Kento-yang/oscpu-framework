@@ -6,29 +6,34 @@ module lsu (
   input                               rst_n , 
   input         [`LSU_OPT_WIDTH-1:0]  lsu_opt   ,   // lsu i_opt.
   input         [`DATA_WIDTH-1:0]      addr  ,   // mem addr. from exu result.
-  input         [`DATA_WIDTH-1:0]      regst ,   // for st.
+  //input         [`DATA_WIDTH-1:0]      regst ,   // for st.
 
-  output  logic [`DATA_WIDTH-1:0]      regld     // for ld.
+//from AXI_RW
+  input  [`DATA_WIDTH-1:0] rdata,
+  
+  output logic [7:0] wmask,
+  output  logic    [1:0] axi_size,
+  output  logic [`DATA_WIDTH-1:0]      regld     // for ld.read data
 );
 
-  wire ren = ~lsu_opt[0];//load instr,need read mem and write to reg files!
+  //wire ren = ~lsu_opt[0];//load instr,need read mem and write to reg files!
   wire [`DATA_WIDTH-1:0] raddr = addr;
-  wire [`DATA_WIDTH-1:0] rdata;
+  
   //=============load=========
   always @(*) begin
     case (lsu_opt)
-      `LSU_LB:  regld = {{56{rdata[ 7]}}, rdata[ 7:0]};
-      `LSU_LH:  regld = {{48{rdata[15]}}, rdata[15:0]};
-      `LSU_LW:  regld = {{32{rdata[31]}}, rdata[31:0]};
-      `LSU_LD:  regld = rdata;
-      `LSU_LBU: regld = {56'b0, rdata[ 7:0]};
-      `LSU_LHU: regld = {48'b0, rdata[15:0]};
-      `LSU_LWU: regld = {32'b0, rdata[31:0]};
-      default:  regld = `DATA_WIDTH'b0;
+      `LSU_LB:  begin regld = {{56{rdata[ 7]}}, rdata[ 7:0]}; axi_size = `SIZE_B;end
+      `LSU_LH:  begin regld = {{48{rdata[15]}}, rdata[15:0]}; axi_size = `SIZE_H;end 
+      `LSU_LW:  begin regld = {{32{rdata[31]}}, rdata[31:0]}; axi_size = `SIZE_W;end 
+      `LSU_LD:  begin regld = rdata;                          axi_size = `SIZE_D;end
+      `LSU_LBU: begin regld = {56'b0, rdata[ 7:0]};           axi_size = `SIZE_B;end
+      `LSU_LHU: begin regld = {48'b0, rdata[15:0]};           axi_size = `SIZE_H;end
+      `LSU_LWU: begin regld = {32'b0, rdata[31:0]};           axi_size = `SIZE_W;end
+      default:  begin regld = `DATA_WIDTH'b0;                 axi_size = `SIZE_B;end
     endcase
   end
 
-  logic [7:0] mask,wmask;
+  logic [7:0] mask;
   logic [`DATA_WIDTH-1:0] waddr,wdata;
   always @(*) begin
     case (lsu_opt)
