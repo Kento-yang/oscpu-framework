@@ -335,7 +335,7 @@ always @(negedge clk) begin
     cmt_wdata <= wb_reg_wdata;//rd_data;
     cmt_pc <= wb_diff_pc;//pc;
     cmt_inst <= wb_inst;//inst;
-    //cmt_valid <= inst_valid;//inst_valid;
+    cmt_valid <= inst_valid;//inst_valid;
 
     regs_diff_npc <= regs;
 
