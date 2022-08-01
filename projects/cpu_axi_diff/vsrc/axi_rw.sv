@@ -266,12 +266,12 @@ module axi_rw # (
 
 
     // ------------------Process Data------------------
-    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);
-    parameter OFFSET_WIDTH  = $clog2(AXI_DATA_WIDTH);
-    parameter AXI_SIZE      = $clog2(AXI_DATA_WIDTH / 8);
-    parameter MASK_WIDTH    = AXI_DATA_WIDTH * 2;
-    parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH;
-    parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;
+    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);//3
+    parameter OFFSET_WIDTH  = $clog2(AXI_DATA_WIDTH);//6
+    parameter AXI_SIZE      = $clog2(AXI_DATA_WIDTH / 8);//3
+    parameter MASK_WIDTH    = AXI_DATA_WIDTH * 2;//
+    parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH; //1
+    parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;//
 
     wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
     wire size_b             = rw_size_i == `SIZE_B;
@@ -374,7 +374,7 @@ module axi_rw # (
                 if (!reset_n) begin
                     data_read_o[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
                 end
-                else if (axi_r_ready_o & axi_r_valid_i) begin
+                else if (axi_r_ready_o & axi_r_valid_i) begin//r_hs
                     if (~aligned & overstep) begin
                         if (len[0]) begin
                             data_read_o[AXI_DATA_WIDTH-1:0] <= data_read_o[AXI_DATA_WIDTH-1:0] | axi_r_data_h;
