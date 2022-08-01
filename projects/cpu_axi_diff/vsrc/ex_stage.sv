@@ -59,7 +59,7 @@ module ex_stage(
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
     
-    logic   [`DATA_WIDTH-1:0]   ex_reg2_rdata; 
+    logic   [`DATA_WIDTH-1:0]   ex_reg2_rdata;
     logic   [`ALU_OP_WIDTH-1 : 0]      ex_alu_op;
     logic   [`ALU_SRC_WIDTH-1 : 0]     ex_alu_src_sel;
     //logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;

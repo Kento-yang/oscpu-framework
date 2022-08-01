@@ -46,7 +46,7 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
   
-  else if ( handshake_done ) begin
+  else if ( handshake_done && jump_cnt == 2'b0) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
     if_inst <= if_data_read[31:0];
@@ -63,7 +63,21 @@ assign if_valid = 1'b1;
 assign if_size = `SIZE_W;
 
     //assign if_pc = curr_pc ;
-    
+
+
+//
+logic [1:0]jump_cnt;
+always @( posedge clk ) begin
+  if (!rst_n) begin
+    jump_cnt <= 2'b0 ;
+  end
+  else if(jump_cnt == 1 && handshake_done)begin
+    jump_cnt <= 2'b0 ;
+  end
+  else if(pc_add_imm_flag && handshake_done)begin
+    jump_cnt <= jump_cnt + 1;
+  end
+end
 //------------------------------------------------------------------------------
 //  1.IF 
 //------------------------------------------------------------------------------

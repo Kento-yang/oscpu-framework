@@ -76,7 +76,7 @@ module id_stage(
     //logic pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
 
     logic pipe_wen;
-    assign pipe_wen =~bubble_id_ex && valid_if2id && ready_id2if ;
+    assign pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
