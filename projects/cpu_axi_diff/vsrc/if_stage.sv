@@ -48,12 +48,12 @@ always @( posedge clk ) begin
   
   else if ( handshake_done && jump_cnt == 2'b0) begin
     if_pc <= if_addr;
-    //if_addr <= if_addr + 4;
+    if_addr <= if_addr + 4;
     if_inst <= if_data_read[31:0];
     fetched <= 1;
   end
   else begin
-    //if_addr <= next_pc;
+    if_addr <= next_pc;
     if_inst <= if_data_read[31:0];
     fetched <= 0;
   end
