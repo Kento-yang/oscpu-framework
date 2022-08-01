@@ -65,8 +65,11 @@ assign if_size = `SIZE_W;
     //assign if_pc = curr_pc ;
 
 
-//
-logic [1:0]jump_cnt;
+// maintain for branch/jump, while ex judge jump occer, need make IF fetch inst again.
+// 1、EX need JUMP
+// 2、add bubble
+// 3、fetch inst again
+logic [1:0] jump_cnt;
 always @( posedge clk ) begin
   if (!rst_n) begin
     jump_cnt <= 2'b0 ;
