@@ -131,15 +131,17 @@ ex_mem u_ex_mem(
 
 
 //handshake
-    logic valid_mem2wb_r,ready_wb2mem_r;
+    logic valid_mem2wb_r, ready_mem2ex_r;
+
     assign valid_mem2wb = valid_mem2wb_r && lsu_valid;
+    assign ready_mem2ex = ready_mem2ex_r && lsu_valid;
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
     .valid_pre_i  ( valid_ex2mem  ),
     .ready_next_i ( ready_wb2mem ),
     .valid_o_next ( valid_mem2wb_r ),
-    .ready_o_pre  ( ready_mem2ex  )
+    .ready_o_pre  ( ready_mem2ex_r  )
 );
 /*lsu u0_lsu(
     .clk                               (clk                       ),
