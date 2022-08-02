@@ -631,12 +631,12 @@ module axi_rw # (
 
 
     // ------------------Process Data------------------
-    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);
+    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);// 3
     parameter OFFSET_WIDTH  = $clog2(AXI_DATA_WIDTH);
     parameter AXI_SIZE      = $clog2(AXI_DATA_WIDTH / 8);
     parameter MASK_WIDTH    = AXI_DATA_WIDTH * 2;
-    parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH;
-    parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;
+    parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH; // 1
+    parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;//0
 
     wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
     wire size_b             = rw_size_i == `SIZE_B;//00
@@ -704,7 +704,7 @@ module axi_rw # (
     assign axi_aw_addr_o    = rw_addr_i;
     assign axi_aw_id_o      = axi_id;
     assign axi_aw_len_o     = axi_len;
-    assign axi_aw_size_o    = axi_size;//{1'b0,rw_size};
+    assign axi_aw_size_o    = {1'b0,rw_size_i};
     assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;
     //Write data channel signals
     assign axi_w_valid_o  = w_state_write;
