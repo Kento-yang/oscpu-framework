@@ -236,6 +236,7 @@ module SimTop(
     wire [63:0] mem_addr;
     wire [1:0] mem_size;
     wire [1:0] mem_resp;
+    
     top u_cpu(
         .clk                            (clock),
         .reset_n                        (~reset),

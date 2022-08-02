@@ -190,14 +190,14 @@ module axi_rw # (
     assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
     assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
     assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    */
-    assign rw_valid_i = m0_rw_valid_i;
+    assign rw_valid_i       = m0_rw_valid_i;
     assign m0_rw_ready_o    =   rw_ready_o;
-    assign rw_req_i = m0_rw_req_i;
+    assign rw_req_i         = m0_rw_req_i;
     assign m0_data_read_o   = data_read_o;
     //assign m0_data_write_i  =
-    assign rw_addr_i = m0_rw_addr_i;
-    assign rw_size_i = m0_rw_size_i;
-    assign m0_rw_resp_o     =rw_resp_o;
+    assign rw_addr_i        = m0_rw_addr_i;
+    assign rw_size_i        = m0_rw_size_i;
+    assign m0_rw_resp_o     =   rw_resp_o;
 //----------------------------------------------------------------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
     wire r_trans    = rw_req_i == `REQ_READ;
@@ -339,7 +339,7 @@ module axi_rw # (
     assign rw_resp_o      = rw_resp;
 
     // ------------------Write Transaction------------------
-    //Write address channel signals
+/*    //Write address channel signals
     assign axi_aw_valid_o   = w_state_addr & w_valid;
     assign axi_aw_addr_o    = rw_addr_i;
     assign axi_aw_id_o      = axi_id;
@@ -354,7 +354,7 @@ module axi_rw # (
     assign axi_w_last_o   = len == axi_len;
 
     //Write response channel signals
-    assign axi_b_ready_o = w_state_resp;
+    assign axi_b_ready_o = w_state_resp;*/
 
     // ------------------Read Transaction------------------
     // Read address channel signals
