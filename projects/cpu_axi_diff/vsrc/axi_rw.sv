@@ -243,6 +243,9 @@ module axi_rw # (
                     W_STATE_RESP:  if (b_hs)    w_state <= W_STATE_IDLE;
                 endcase
             end
+            else begin
+                w_state <= W_STATE_IDLE;
+            end
         end
     end
 
