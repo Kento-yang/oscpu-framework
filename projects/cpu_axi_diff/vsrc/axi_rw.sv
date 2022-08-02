@@ -48,7 +48,7 @@
 `define AXI_SIZE_BYTES_64                                   3'b110
 `define AXI_SIZE_BYTES_128                                  3'b111
 
-/*
+
 module axi_rw # (
     parameter RW_DATA_WIDTH     = 64,
     parameter RW_ADDR_WIDTH     = 64,
@@ -392,7 +392,7 @@ module axi_rw # (
     endgenerate
 
 endmodule
-*/
+/*
 module axi_rw # (
     parameter RW_DATA_WIDTH     = 64,
     parameter RW_ADDR_WIDTH     = 64,
@@ -651,4 +651,4 @@ module axi_rw # (
         end
     endgenerate
 
-endmodule
+endmodule*/

@@ -137,7 +137,7 @@ module SimTop(
     axi_rw u_axi_rw (
         .clock                          (clock),
         .reset_n                          (~reset),
-
+/*
         .rw_valid_i                     (if_valid),
         .rw_ready_o                     (if_ready),
         .rw_req_i                       (if_req),
@@ -145,9 +145,9 @@ module SimTop(
         .data_write_i                   (),
         .rw_addr_i                      (if_addr),
         .rw_size_i                      (if_size),
-        .rw_resp_o                      (if_resp),
+        .rw_resp_o                      (if_resp),*/
 //IF
-        /*.m0_rw_valid_i                  (if_valid),
+        .m0_rw_valid_i                  (if_valid),
         .m0_rw_ready_o                  (if_ready),
         .m0_rw_req_i                    (if_req),
         .m0_data_read_o                 (if_data_read),
@@ -166,7 +166,7 @@ module SimTop(
         .m1_rw_size_i                   (mem_size),
         .m1_rw_resp_o                   (mem_resp),
         .m1_write_mask_i                (mem_wmask),//for write' 
-*/
+
         .axi_aw_ready_i                 (aw_ready),
         .axi_aw_valid_o                 (aw_valid),
         .axi_aw_addr_o                  (aw_addr),
