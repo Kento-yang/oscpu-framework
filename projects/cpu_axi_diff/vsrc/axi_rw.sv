@@ -159,7 +159,7 @@ module axi_rw # (
     always @(posedge clock) begin
         if(r_state == R_STATE_IDLE)
             grant <= (m1_rw_valid_i)? MASTER_1 : (m0_rw_valid_i)? MASTER_0 : 'b0;
-        else if(w_state == W_STATE_ADDR && r_hs)
+        else if(w_state == W_STATE_ADDR )
             grant <= (m1_rw_valid_i)? MASTER_1 : 'b0;
     end
 
@@ -218,7 +218,7 @@ module axi_rw # (
     wire r_done_for;                                          // r_done_for=1'b1: m0 read transaction done before m1 write transaction
     wire w_done     = w_hs & axi_w_last_o;
     wire r_done     = (r_hs & axi_r_last_i) | r_done_for;
-    wire trans_done = w_trans ? b_hs : r_done;
+    wire trans_done = grant ? b_hs : r_done;//w_trans ? b_hs : r_done;
 
     
     // ------------------State Machine------------------
