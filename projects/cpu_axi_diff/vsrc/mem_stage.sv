@@ -77,10 +77,10 @@ ex_mem u_ex_mem(
     always @(*) begin
       if(!rst_n)
           lsu_valid = 1'b0;
-      else if(handshake_done)
-          lsu_valid = 1'b1;
+      else if(!handshake_done && mem_lsu_opt != `LSU_NOP && mem_lsu_opt != 'h0)
+          lsu_valid = 1'b0;
       else
-          lsu_valid = 0;
+          lsu_valid = 1'b1;
     end
 
     assign mem_valid_o = (mem_lsu_opt != `LSU_NOP && mem_lsu_opt != 'h0)? 1 : 0; //ld or st occupy the axi
