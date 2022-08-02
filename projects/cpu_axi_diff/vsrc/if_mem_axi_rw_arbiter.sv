@@ -1,4 +1,4 @@
-module if_mem_axi_rw_arbiter(
+/*module if_mem_axi_rw_arbiter(
     input                               clk                        ,
     input                               reset_n                    ,
 //IF INTTERFACE
@@ -35,9 +35,9 @@ module if_mem_axi_rw_arbiter(
     wire handshake;
     assign handshake = rw_valid_i & rw_ready_o;
     always @(posedge clock) begin
-        if(r_state == R_STATE_IDLE)
+        if(r_state == R_STATE_IDLE  )
             grant <= (m1_rw_valid_i)? MASTER_1 : (m0_rw_valid_i)? MASTER_0 : 'b0;
-        else if(w_state == W_STATE_ADDR )
+        else if(w_state == W_STATE_ADDR  )
             grant <= (m1_rw_valid_i)? MASTER_1 : 'b0;
     end
 
