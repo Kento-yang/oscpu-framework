@@ -151,7 +151,7 @@ module axi_rw # (
     logic [AXI_DATA_WIDTH:0]           rw_addr_i;
     logic [1:0]                        rw_size_i;
     logic [1:0]                        rw_resp_o;
-//--------------------------Arbitration------------------------------------------
+/*--------------------------Arbitration------------------------------------------
     //arbitrate m1 > m0
     localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
     logic grant;
@@ -184,12 +184,20 @@ module axi_rw # (
             rw_size_i = m0_rw_size_i;
         end
     end
-    assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready : 1'b0;          
-    assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready;
+    assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready_o : 1'b0;          
+    assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready_o;
     assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
     assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
     assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
-    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    
+    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    */
+    assign rw_valid_i = m0_rw_valid_i;
+    assign m0_rw_ready_o    =   rw_ready_o;
+    assign rw_req_i = m0_rw_req_i;
+    assign m0_data_read_o   = data_read_o;
+    //assign m0_data_write_i  =
+    assign rw_addr_i = m0_rw_addr_i;
+    assign rw_size_i = m0_rw_size_i;
+    assign m0_rw_resp_o     =rw_resp_o;
 //----------------------------------------------------------------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
     wire r_trans    = rw_req_i == `REQ_READ;
