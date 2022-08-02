@@ -215,8 +215,9 @@ module axi_rw # (
     wire ar_hs      = axi_ar_ready_i & axi_ar_valid_o;
     wire r_hs       = axi_r_ready_o  & axi_r_valid_i;
 
+    wire r_done_for;                                          // r_done_for=1'b1: m0 read transaction done before m1 write transaction
     wire w_done     = w_hs & axi_w_last_o;
-    wire r_done     = r_hs & axi_r_last_i;
+    wire r_done     = (r_hs & axi_r_last_i) | r_done_for;
     wire trans_done = w_trans ? b_hs : r_done;
 
     
@@ -261,7 +262,32 @@ module axi_rw # (
             end
         end
     end
-
+//  Process:m0 read transaction done before m1 write transaction
+    reg reg_r_done;
+    reg [AXI_ADDR_WIDTH-1:0] reg_r_adr;
+    always @(posedge clock) begin
+        if(!reset_n) begin
+          reg_r_adr <= 'b0;
+        end
+        else if(ar_hs) begin
+          reg_r_adr <= axi_ar_addr_o;
+        end
+        else begin
+          reg_r_adr <= reg_r_adr;
+        end
+    end
+    always @(posedge clock) begin
+        if(!reset_n) begin
+          reg_r_done <= 1'b0;
+        end
+        else if(w_trans & r_done) begin
+          reg_r_done <= 1'b1;
+        end
+        else if(~w_trans) begin
+          reg_r_done <= 1'b0;
+        end
+    end
+    assign r_done_for = (r_trans & reg_r_done); // m0 read transaction done before m1 write transaction
 
     // ------------------Number of transmission------------------
     reg [7:0] len;
@@ -275,7 +301,6 @@ module axi_rw # (
             len <= len + 1;
         end
     end
-
 
     // ------------------Process Data------------------
     parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);// 3
@@ -327,7 +352,7 @@ module axi_rw # (
             rw_ready <= rw_ready_nxt;
         end
     end
-    assign rw_ready_o     = rw_ready;
+    assign rw_ready_o   = rw_ready;
 
     reg [1:0] rw_resp;
     wire rw_resp_nxt = w_trans ? axi_b_resp_i : axi_r_resp_i;
