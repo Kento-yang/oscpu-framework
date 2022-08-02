@@ -49,7 +49,7 @@
 `define AXI_SIZE_BYTES_128                                  3'b111
 
 
-module axi_rw # (
+/*module axi_rw # (
     parameter RW_DATA_WIDTH     = 64,
     parameter RW_ADDR_WIDTH     = 64,
     parameter AXI_DATA_WIDTH    = 64,
@@ -151,7 +151,7 @@ module axi_rw # (
     logic [AXI_DATA_WIDTH:0]           rw_addr_i;
     logic [1:0]                        rw_size_i;
     logic [1:0]                        rw_resp_o;
-/*--------------------------Arbitration------------------------------------------
+//--------------------------Arbitration------------------------------------------
     //arbitrate m1 > m0
     localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
     logic grant;
@@ -189,7 +189,7 @@ module axi_rw # (
     assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
     assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
     assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
-    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    */
+    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    
     assign rw_valid_i       = m0_rw_valid_i;
     assign m0_rw_ready_o    =   rw_ready_o;
     assign rw_req_i         = m0_rw_req_i;
@@ -339,7 +339,7 @@ module axi_rw # (
     assign rw_resp_o      = rw_resp;
 
     // ------------------Write Transaction------------------
-/*    //Write address channel signals
+//    //Write address channel signals
     assign axi_aw_valid_o   = w_state_addr & w_valid;
     assign axi_aw_addr_o    = rw_addr_i;
     assign axi_aw_id_o      = axi_id;
@@ -354,7 +354,7 @@ module axi_rw # (
     assign axi_w_last_o   = len == axi_len;
 
     //Write response channel signals
-    assign axi_b_ready_o = w_state_resp;*/
+    assign axi_b_ready_o = w_state_resp;
 
     // ------------------Read Transaction------------------
     // Read address channel signals
@@ -399,8 +399,8 @@ module axi_rw # (
         end
     endgenerate
 
-endmodule
-/*
+endmodule*/
+
 module axi_rw # (
     parameter RW_DATA_WIDTH     = 64,
     parameter RW_ADDR_WIDTH     = 64,
@@ -411,7 +411,7 @@ module axi_rw # (
 )(
     input                               clock,
     input                               reset_n,
-
+/*
 	input                               rw_valid_i,
 	output                              rw_ready_o,
     input                               rw_req_i,
@@ -419,7 +419,30 @@ module axi_rw # (
     input  [RW_DATA_WIDTH:0]            data_write_i,
     input  [AXI_DATA_WIDTH:0]           rw_addr_i,
     input  [1:0]                        rw_size_i,
-    output [1:0]                        rw_resp_o,
+    output [1:0]                        rw_resp_o,*/
+
+//for arbitration
+    //IF interface (read only)
+    input                                  m0_rw_valid_i,
+    output                                 m0_rw_ready_o,
+    input                                  m0_rw_req_i,
+    output reg [RW_DATA_WIDTH-1:0]             m0_data_read_o,
+    //input  [RW_DATA_WIDTH:0]               m0_data_write_i,
+    input  [AXI_DATA_WIDTH-1:0]            m0_rw_addr_i,
+    input  [1:0]                           m0_rw_size_i,
+    output [1:0]                           m0_rw_resp_o,
+
+    //MEM interface r/w
+    input                                   m1_rw_valid_i,
+    output                                  m1_rw_ready_o,
+    input                                   m1_rw_req_i,//1：write to mem 0：read from mem
+    output [RW_DATA_WIDTH-1:0]              m1_data_read_o,
+    input  [RW_DATA_WIDTH-1:0]              m1_data_write_i,
+    input  [AXI_DATA_WIDTH-1:0]             m1_rw_addr_i,
+    input  [1:0]                            m1_rw_size_i,
+    output [1:0]                            m1_rw_resp_o,
+
+    input  [7:0]                            m1_write_mask_i,//for write
 
     // Advanced eXtensible Interface
     input                               axi_aw_ready_i,
@@ -471,7 +494,24 @@ module axi_rw # (
     input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
     input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
-
+//------------------------
+    logic                              rw_valid_i;
+	logic                              rw_ready_o;
+    logic                              rw_req_i;
+    logic [RW_DATA_WIDTH:0]            data_read_o;
+    logic [RW_DATA_WIDTH:0]            data_write_i;
+    logic [AXI_DATA_WIDTH:0]           rw_addr_i;
+    logic [1:0]                        rw_size_i;
+    logic [1:0]                        rw_resp_o;
+    assign rw_valid_i       = m0_rw_valid_i;
+    assign m0_rw_ready_o    =   rw_ready_o;
+    assign rw_req_i         = m0_rw_req_i;
+    assign m0_data_read_o   = data_read_o;
+    //assign m0_data_write_i  =
+    assign rw_addr_i        = m0_rw_addr_i;
+    assign rw_size_i        = m0_rw_size_i;
+    assign m0_rw_resp_o     =   rw_resp_o;
+//---------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
     wire r_trans    = rw_req_i == `REQ_READ;
     wire w_valid    = rw_valid_i & w_trans;
@@ -659,4 +699,4 @@ module axi_rw # (
         end
     endgenerate
 
-endmodule*/
+endmodule
