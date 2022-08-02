@@ -422,7 +422,7 @@ module axi_rw # (
     output [1:0]                        rw_resp_o,*/
 
 //for arbitration
-    //IF interface (read only)
+//IF interface (read only)
     input                                  m0_rw_valid_i,
     output                                 m0_rw_ready_o,
     input                                  m0_rw_req_i,
@@ -432,7 +432,7 @@ module axi_rw # (
     input  [1:0]                           m0_rw_size_i,
     output [1:0]                           m0_rw_resp_o,
 
-    //MEM interface r/w
+//MEM interface r/w
     input                                   m1_rw_valid_i,
     output                                  m1_rw_ready_o,
     input                                   m1_rw_req_i,//1：write to mem 0：read from mem
@@ -494,7 +494,9 @@ module axi_rw # (
     input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
     input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
-//------------------------
+//------------------------------------------------------------------------------
+//  Arbitration 
+//------------------------------------------------------------------------------
     logic                              rw_valid_i;
 	logic                              rw_ready_o;
     logic                              rw_req_i;
@@ -503,15 +505,56 @@ module axi_rw # (
     logic [AXI_DATA_WIDTH:0]           rw_addr_i;
     logic [1:0]                        rw_size_i;
     logic [1:0]                        rw_resp_o;
-    assign rw_valid_i       = m0_rw_valid_i;
+        //arbitrate m1 > m0
+    localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
+    logic grant;
+
+    always @(posedge clock) begin
+        if(r_state == R_STATE_IDLE)
+            grant <= (m1_rw_valid_i)? MASTER_1 : (m0_rw_valid_i)? MASTER_0 : 'b0;
+        else if(w_state == W_STATE_ADDR)
+            grant <= (m1_rw_valid_i)? MASTER_1 : 'b0;
+    end
+
+    always @(*) begin
+        rw_valid_i = 1'b0;
+        rw_req_i = 1'b0;
+        data_write_i = 'b0;
+        rw_addr_i = 'b0;
+        rw_size_i = 'b0;
+    //priority m1 > m0
+        if(m1_rw_valid_i == 1'b1) begin
+            rw_valid_i = m1_rw_valid_i;
+            rw_req_i = m1_rw_req_i;
+            data_write_i = m1_data_write_i;
+            rw_addr_i = m1_rw_addr_i;
+            rw_size_i = m1_rw_size_i;
+        end
+        else if(m0_rw_valid_i) begin
+            rw_valid_i = m0_rw_valid_i;
+            rw_req_i = m0_rw_req_i;
+            rw_addr_i = m0_rw_addr_i;
+            rw_size_i = m0_rw_size_i;
+        end
+    end
+    assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready_o : 1'b0;          
+    assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready_o;
+    assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
+    assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
+    assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
+    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    
+
+    /*assign rw_valid_i       = m0_rw_valid_i;
     assign m0_rw_ready_o    =   rw_ready_o;
     assign rw_req_i         = m0_rw_req_i;
     assign m0_data_read_o   = data_read_o;
     //assign m0_data_write_i  =
     assign rw_addr_i        = m0_rw_addr_i;
     assign rw_size_i        = m0_rw_size_i;
-    assign m0_rw_resp_o     =   rw_resp_o;
-//---------------------------------
+    assign m0_rw_resp_o     =   rw_resp_o;*/
+//------------------------------------------------------------------------------
+//  (original) 
+//------------------------------------------------------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
     wire r_trans    = rw_req_i == `REQ_READ;
     wire w_valid    = rw_valid_i & w_trans;
