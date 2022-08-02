@@ -157,9 +157,9 @@ module axi_rw # (
     logic grant;
 
     always @(posedge clock) begin
-        if(r_state == R_STATE_IDLE)
+        if(w_state != W_STATE_ADDR && r_state == R_STATE_IDLE)
             grant <= (m1_rw_valid_i)? MASTER_1 : (m0_rw_valid_i)? MASTER_0 : 'b0;
-        else if(w_state == W_STATE_ADDR)
+        else if(w_state == W_STATE_ADDR && r_state == R_STATE_IDLE)//mo read over，m1 can write
             grant <= (m1_rw_valid_i)? MASTER_1 : 'b0;
     end
 
