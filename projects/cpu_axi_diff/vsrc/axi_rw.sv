@@ -411,7 +411,7 @@ module axi_rw # (
 )(
     input                               clock,
     input                               reset_n,
-/*
+/* original signal
 	input                               rw_valid_i,
 	output                              rw_ready_o,
     input                               rw_req_i,
@@ -456,8 +456,8 @@ module axi_rw # (
     output [1:0]                        axi_aw_burst_o,
     output                              axi_aw_lock_o,
     output [3:0]                        axi_aw_cache_o,
-    output [3:0]                        axi_aw_qos_o,
-    output [3:0]                        axi_aw_region_o,
+    output [3:0]                        axi_aw_qos_o,//AXI4 only
+    output [3:0]                        axi_aw_region_o,//AXI4 only
 
     input                               axi_w_ready_i,
     output                              axi_w_valid_o,
@@ -701,16 +701,24 @@ module axi_rw # (
     // ------------------Write Transaction------------------
     //Write address channel signals
     assign axi_aw_valid_o   = w_state_addr & w_valid;
-    assign axi_aw_addr_o    = rw_addr_i;
-    assign axi_aw_id_o      = axi_id;
+    assign axi_aw_addr_o    = axi_addr;
     assign axi_aw_len_o     = axi_len;
-    assign axi_aw_size_o    = {1'b0,rw_size_i};
-    assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;
+    assign axi_aw_size_o    = axi_size;//{1'b0,rw_size_i};
+    assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;//突发类型：递增类型
+    assign axi_aw_id_o      = axi_id;
+    assign axi_aw_user_o    = axi_user;
+    assign axi_aw_prot_o    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
+    assign axi_aw_cache_o   = `AXI_AWCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE;
+    assign axi_aw_lock_o    =  1'b0;
+    assign axi_aw_qos_o     =  4'h0;
+    assign axi_aw_region_o  =  4'h0;
+
     //Write data channel signals
     assign axi_w_valid_o  = w_state_write;
     assign axi_w_data_o   = data_write_i;        //assume: YSYX210366_AXI_DATA_WIDTH = YSYX210366_RW_DATA_WIDTH
     assign axi_w_strb_o   = m1_write_mask_i;
     assign axi_w_last_o   = len == axi_len;
+
     //Write response channel signals
     assign axi_b_ready_o = w_state_resp;
 

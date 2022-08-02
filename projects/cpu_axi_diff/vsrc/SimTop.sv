@@ -161,7 +161,6 @@ module SimTop(
         .m1_rw_req_i                    (mem_req),//1：write to mem 0：read from mem
         .m1_data_read_o                 (mem_data_read),
         .m1_data_write_i                (mem_data_write),
-
         .m1_rw_addr_i                   (mem_addr),
         .m1_rw_size_i                   (mem_size),
         .m1_rw_resp_o                   (mem_resp),
@@ -232,11 +231,11 @@ module SimTop(
     wire mem_req ;
     wire [63:0] mem_data_read;
     wire [63:0] mem_data_write;
-    wire [7:0] mem_wmask;
     wire [63:0] mem_addr;
     wire [1:0] mem_size;
     wire [1:0] mem_resp;
     
+    wire [7:0] mem_wmask;
     top u_cpu(
         .clk                            (clock),
         .reset_n                        (~reset),
