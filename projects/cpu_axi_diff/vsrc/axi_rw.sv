@@ -505,7 +505,7 @@ module axi_rw # (
     logic [AXI_DATA_WIDTH:0]           rw_addr_i;
     logic [1:0]                        rw_size_i;
     logic [1:0]                        rw_resp_o;
-        //arbitrate m1 > m0
+    //arbitrate m1 > m0
     localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
     logic grant;
 
@@ -537,6 +537,7 @@ module axi_rw # (
             rw_size_i = m0_rw_size_i;
         end
     end
+
     assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready_o : 1'b0;          
     assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready_o;
     assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
@@ -638,10 +639,10 @@ module axi_rw # (
     parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;
 
     wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
-    wire size_b             = rw_size_i == `SIZE_B;
-    wire size_h             = rw_size_i == `SIZE_H;
-    wire size_w             = rw_size_i == `SIZE_W;
-    wire size_d             = rw_size_i == `SIZE_D;
+    wire size_b             = rw_size_i == `SIZE_B;//00
+    wire size_h             = rw_size_i == `SIZE_H;//01
+    wire size_w             = rw_size_i == `SIZE_W;//10
+    wire size_d             = rw_size_i == `SIZE_D;//11
     wire [3:0] addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, rw_addr_i[ALIGNED_WIDTH-1:0]};
     wire [3:0] addr_op2     = ({4{size_b}} & {4'b0})
                                 | ({4{size_h}} & {4'b1})
@@ -694,11 +695,25 @@ module axi_rw # (
     end
     assign rw_resp_o      = rw_resp;
 
-
+//------------------------------------------------------------------------------
+//  W/R Transactions 
+//------------------------------------------------------------------------------
     // ------------------Write Transaction------------------
+    //Write address channel signals
+    assign axi_aw_valid_o   = w_state_addr & w_valid;
+    assign axi_aw_addr_o    = rw_addr_i;
+    assign axi_aw_id_o      = axi_id;
+    assign axi_aw_len_o     = axi_len;
+    assign axi_aw_size_o    = axi_size;//{1'b0,rw_size};
+    assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;
+    //Write data channel signals
+    assign axi_w_valid_o  = w_state_write;
+    assign axi_w_data_o   = data_write_i;        //assume: YSYX210366_AXI_DATA_WIDTH = YSYX210366_RW_DATA_WIDTH
+    assign axi_w_strb_o   = m1_write_mask_i;
+    assign axi_w_last_o   = len == axi_len;
+    //Write response channel signals
+    assign axi_b_ready_o = w_state_resp;
 
-
-    
     // ------------------Read Transaction------------------
     // Read address channel signals
     assign axi_ar_valid_o   = r_state_addr;
