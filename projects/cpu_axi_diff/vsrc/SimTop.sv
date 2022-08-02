@@ -136,7 +136,7 @@ module SimTop(
 
     axi_rw u_axi_rw (
         .clock                          (clock),
-        .reset_n                          (~reset),
+        .reset_n                         (~reset),
 /*
         .rw_valid_i                     (if_valid),
         .rw_ready_o                     (if_ready),
@@ -234,7 +234,7 @@ module SimTop(
     wire [63:0] mem_addr;
     wire [1:0] mem_size;
     wire [1:0] mem_resp;
-    
+
     wire [7:0] mem_wmask;
     top u_cpu(
         .clk                            (clock),
