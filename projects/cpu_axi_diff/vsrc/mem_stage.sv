@@ -32,6 +32,7 @@ module mem_stage(
 
     //output                              mem_hold, //to WBU, stall the pipeline
 
+    output logic lsu_valid,
 //handshake signal
     input                               valid_ex2mem               ,
     input                               ready_wb2mem               ,
@@ -73,7 +74,6 @@ ex_mem u_ex_mem(
     logic handshake_done;
     assign handshake_done = mem_valid_o & mem_ready_i;
 
-    logic lsu_valid;
     always @(*) begin
       if(!rst_n)
           lsu_valid = 1'b0;

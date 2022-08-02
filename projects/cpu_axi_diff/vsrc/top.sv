@@ -249,6 +249,7 @@ ex_stage u_ex_stage(
 //------------------------------------------------------------------------------
 //handshake
     logic                                   ready_wb2mem = 1, valid_mem2wb;
+    logic mem_lsu_valid;
 mem_stage u_mem_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
@@ -278,6 +279,7 @@ mem_stage u_mem_stage(
     .mem_diff_pc                       (mem_diff_pc               ),
     .mem_regld                         (mem_regld                 ),
 
+    .lsu_valid(mem_lsu_valid),
     .valid_ex2mem                      (valid_ex2mem              ),
     .ready_wb2mem                      (ready_wb2mem              ),
     .valid_mem2wb                      (valid_mem2wb              ),
@@ -327,7 +329,7 @@ reg [`REG_BUS] regs_diff_npc [0 : 31];
 wire inst_valid; //= fetched;
 
 //commit need 
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched;
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
 
 
 //initial begin
