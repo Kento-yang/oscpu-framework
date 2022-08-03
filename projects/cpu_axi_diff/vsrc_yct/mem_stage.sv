@@ -168,7 +168,7 @@ ex_mem u_ex_mem(
     logic valid_mem2wb_r, ready_mem2ex_r;
 
     assign valid_mem2wb = valid_mem2wb_r && lsu_valid;
-    assign ready_mem2ex = ready_mem2ex_r /*&& lsu_valid*/;
+    assign ready_mem2ex = ready_mem2ex_r && lsu_valid;
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
