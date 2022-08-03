@@ -60,7 +60,7 @@ module axi_rw # (
     input                               reset_n,
 // original signal
 	input                               rw_valid_i,
-	output                              rw_ready_o,
+	output logic                             rw_ready_o,
     input                               rw_req_i,
     output reg [RW_DATA_WIDTH:0]        data_read_o,
     input  [RW_DATA_WIDTH:0]            data_write_i,
