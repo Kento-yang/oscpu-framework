@@ -34,8 +34,23 @@ module if_stage(
     input  ready_id2if,
     output valid_if2id
 );
+//shake hands to AXI -- IF for store INST (grant = 1 may be flush the pre if inst)
+  logic [`INST_WIDTH-1:0] if_data_read_i, if_data_read_r;
+  assign if_data_read_i = if_data_read[`INST_WIDTH-1:0];
+Reg #(
+    .WIDTH      (`INST_WIDTH),
+    .RESET_VAL  (`INST_WIDTH'b0)
+  ) if_id_reg(
+  	.clk      (clk                ),
+    .rst_n    (rst_n              ),
+    .wen      (axi_if_handshake_done ),
+    .din      (if_data_read_i),
+    .dout     (if_data_read_r)
+  );
+  assign if_inst = axi_if_handshake_done ? if_data_read_i : if_data_read_r;
+
 //fetch an instruction
-wire handshake_done = if_valid & if_ready;
+wire axi_if_handshake_done = if_valid & if_ready;
 reg [63:0] addr;
 
 // fetch an instruction
@@ -46,10 +61,10 @@ always @( posedge clk ) begin
     fetched <= 0;
   end
   
-  else if ( handshake_done && jump_cnt == 2'b0) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
-    if_inst <= if_data_read[31:0];
+    //if_inst <= if_data_read[31:0];
     fetched <= 1;
   end
   else begin
@@ -74,10 +89,10 @@ always @( posedge clk ) begin
   if (!rst_n) begin
     jump_cnt <= 2'b0 ;
   end
-  else if(jump_cnt == 1 && handshake_done)begin
+  else if(jump_cnt == 1 && axi_if_handshake_done)begin
     jump_cnt <= 2'b0 ;
   end
-  else if(pc_add_imm_flag && handshake_done)begin
+  else if(pc_add_imm_flag && axi_if_handshake_done)begin
     jump_cnt <= jump_cnt + 1;
   end
 end

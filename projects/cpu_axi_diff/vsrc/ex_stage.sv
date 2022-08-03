@@ -32,8 +32,8 @@ module ex_stage(
 
     output    logic   [`PC_WIDTH-1:0]     ex_pc,
     output logic                       ex_branch,                          // ex_branch type 
-    output    logic                       ex_zero,                            // alu result is ex_zero
-    output       logic                       ex_jalr,
+    output logic                       ex_zero,                            // alu result is ex_zero
+    output logic                       ex_jalr,
     output logic                       ex_jump,                            // ex_jump type 
     output logic   [`DATA_WIDTH-1:0]   ex_imm,                           // immediate  
     output logic   [`DATA_WIDTH-1:0]   ex_reg1_rdata,                     // rs1    ex_jalr:rs1+ex_imm
