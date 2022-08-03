@@ -48,6 +48,8 @@ module id_stage(
     output            [`ALU_OP_WIDTH-1 : 0]      id_alu_op,
     output            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel,
     output            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt,
+    output logic id_lsu_lden,
+    output logic id_lsu_sten,
     output           [`PC_WIDTH-1:0]             id_diff_pc,    
 
 //to the top DPIC detect good/bad trap
@@ -111,6 +113,8 @@ decode u1_decode(
     .alu_op                            (id_alu_op                 ),
     .alu_src_sel                       (id_alu_src_sel            ),
     .lsu_opt                           (id_lsu_opt                ),
+    .lsu_lden(id_lsu_lden),
+    .lsu_sten(id_lsu_sten),
     .jalr                              (id_jalr                   ) 
 );
 

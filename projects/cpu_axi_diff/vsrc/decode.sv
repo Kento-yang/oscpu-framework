@@ -18,6 +18,8 @@ module decode (
     output reg      [`ALU_SRC_WIDTH-1 : 0]      alu_src_sel, // alu source select flag
     
     output logic    [`LSU_OPT_WIDTH-1 : 0]      lsu_opt,
+    output logic lsu_lden,
+    output logic lsu_sten,
     output logic                                jalr           
 );
 
@@ -255,9 +257,11 @@ end
 //============5.LOAD STORE INFO==================
   always@(*)begin
     lsu_opt = `LSU_NOP;
+    lsu_lden = 0;
+    lsu_sten = 0;
     case(opcode)    
-      `INST_TYPE_IL:lsu_opt = {funct3,1'b0};//0 represent load
-      `INST_TYPE_S: lsu_opt = {funct3,1'b1};//1 represent store
+      `INST_TYPE_IL:begin lsu_opt = {funct3,1'b0}; lsu_lden = 1; end//0 represent load
+      `INST_TYPE_S: begin lsu_opt = {funct3,1'b1}; lsu_sten = 1; end //1 represent store
       default:;
     endcase
   end

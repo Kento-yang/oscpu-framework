@@ -21,6 +21,8 @@ module id_ex (
   input            [`ALU_OP_WIDTH-1 : 0]      id_alu_op,
   input            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel,
   input            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt,
+  input id_lsu_lden,
+  input id_lsu_sten,
   input           [`PC_WIDTH-1:0]             id_diff_pc,    
 
   output logic            [`INST_WIDTH-1:0]           ex_inst   ,
@@ -38,6 +40,8 @@ module id_ex (
   output logic     [`ALU_OP_WIDTH-1 : 0]      ex_alu_op,
   output logic     [`ALU_SRC_WIDTH-1 : 0]     ex_alu_src_sel,
   output logic     [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
+  output logic ex_lsu_lden,
+  output logic ex_lsu_sten,
   output logic           [`PC_WIDTH-1:0]             ex_diff_pc
 );
   logic            [`INST_WIDTH-1:0]           tem_inst   ;
@@ -55,6 +59,8 @@ module id_ex (
   logic     [`ALU_OP_WIDTH-1 : 0]      tem_alu_op;
   logic     [`ALU_SRC_WIDTH-1 : 0]     tem_alu_src_sel;
   logic     [`LSU_OPT_WIDTH-1 : 0]     tem_lsu_opt;
+  logic tem_lsu_lden;
+  logic tem_lsu_sten;
  logic           [`PC_WIDTH-1:0]             tem_diff_pc; 
 
 
@@ -74,12 +80,14 @@ module id_ex (
   assign tem_alu_op     = ( bpu_bubble ||bypass_bubble) ? `ALU_ADD :id_alu_op;
   assign tem_alu_src_sel= ( bpu_bubble ||bypass_bubble) ? `ALU_SRC_IMM : id_alu_src_sel;
   assign tem_lsu_opt    = ( bpu_bubble ||bypass_bubble) ? 0 :id_lsu_opt;
+  assign tem_lsu_lden    = ( bpu_bubble ||bypass_bubble) ? 0 :id_lsu_lden;
+  assign tem_lsu_sten    = ( bpu_bubble ||bypass_bubble) ? 0 :id_lsu_sten;
   assign tem_diff_pc = bpu_bubble ? `PC_WIDTH'h0 : //jump adventure
                        (bypass_bubble ? `PC_WIDTH'h1 : id_diff_pc);//data adventure
 
 Reg #(
     .WIDTH      (`INST_WIDTH+2*`PC_WIDTH + 4 + 3*`REG_ADDR_WIDTH + 3*`DATA_WIDTH + 
-                `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH),
+                `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH + 2),
     .RESET_VAL  (0                    )
   ) if_id_reg(
   	.clk      (clk                ),
@@ -87,10 +95,10 @@ Reg #(
     .wen      (pipe_wen                ),
     .din      ({tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
               tem_reg_wen, tem_reg_waddr, tem_reg1_raddr, tem_reg2_raddr, tem_reg1_rdata, tem_reg2_rdata, tem_imm,
-              tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_diff_pc}),
+              tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,tem_diff_pc}),
     .dout     ({ex_inst, ex_pc, ex_branch, ex_jump,  ex_jalr,
               ex_reg_wen, ex_reg_waddr, ex_reg1_raddr, ex_reg2_raddr,  ex_reg1_rdata, ex_reg2_rdata, ex_imm,
-              ex_alu_op, ex_alu_src_sel, ex_lsu_opt,ex_diff_pc})
+              ex_alu_op, ex_alu_src_sel, ex_lsu_opt,ex_lsu_lden,ex_lsu_sten,ex_diff_pc})
   );
 
 

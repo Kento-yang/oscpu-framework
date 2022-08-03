@@ -127,6 +127,9 @@ if_stage u_if_stage(
     logic            [`ALU_OP_WIDTH-1 : 0]      id_alu_op;
     logic            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel;
     logic            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt; 
+    logic id_lsu_lden;
+    logic id_lsu_sten;
+    
 //to ex mux_ldst_bp
      logic                              bp_ld_st_ctrl;
 //handshake
@@ -172,6 +175,8 @@ id_stage u_id_stage(
     .id_alu_op                         (id_alu_op                 ),
     .id_alu_src_sel                    (id_alu_src_sel            ),
     .id_lsu_opt                        (id_lsu_opt                ),
+    .id_lsu_lden(id_lsu_lden),
+    .id_lsu_sten(id_lsu_sten),
     .id_diff_pc                        (id_diff_pc                ),
     .reg10_a0                          (reg10_a0                  ),
     .bubble_id_ex                      (bubble_id_ex              ),
@@ -195,6 +200,8 @@ id_stage u_id_stage(
     logic                       ex_jalr;
     logic             [`DATA_WIDTH-1:0]          ex_regst     ;     //ex_reg2_rdata
     logic                       ex_alu_res_valid;
+
+    logic ex_lsu_lden,ex_lsu_sten;
 //handshake
     logic ready_mem2ex, valid_ex2mem;
 ex_stage u_ex_stage(
@@ -220,6 +227,8 @@ ex_stage u_ex_stage(
     .id_alu_op                         (id_alu_op                 ),
     .id_alu_src_sel                    (id_alu_src_sel            ),
     .id_lsu_opt                        (id_lsu_opt                ),
+    .id_lsu_lden(id_lsu_lden),
+    .id_lsu_sten(id_lsu_sten),
     .id_diff_pc                        (id_diff_pc                ),
 
     .ex_pc                             (ex_pc                     ),
@@ -235,6 +244,8 @@ ex_stage u_ex_stage(
     .ex_alu_res                        (ex_alu_res                ),
     .ex_regst                          (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+    .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_alu_res_valid                  (ex_alu_res_valid),//div res valid signal.
 
@@ -250,6 +261,7 @@ ex_stage u_ex_stage(
 //handshake
     logic                                   ready_wb2mem = 1, valid_mem2wb;
     logic mem_lsu_valid;
+    logic mem_lsu_lden,mem_lsu_sten;
 mem_stage u_mem_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
@@ -259,6 +271,8 @@ mem_stage u_mem_stage(
     .ex_alu_res                        (ex_alu_res                ),
     .ex_regst                          (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+    .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
 //r/w data memory from/to axi_rw
     .mem_valid_o                       (mem_valid                 ),
@@ -276,7 +290,9 @@ mem_stage u_mem_stage(
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_alu_res                       (mem_alu_res               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
-    .mem_diff_pc                       (mem_diff_pc               ),
+    .mem_lsu_lden(mem_lsu_lden),
+    .mem_lsu_sten(mem_lsu_sten),
+    .mem_diff_pc                      (mem_diff_pc               ),
     .mem_regld                         (mem_regld                 ),
 
     .lsu_valid(mem_lsu_valid),

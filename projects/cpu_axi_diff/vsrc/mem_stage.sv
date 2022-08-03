@@ -9,6 +9,8 @@ module mem_stage(
     input       [`DATA_WIDTH-1:0]       ex_alu_res                 ,
     input       [`DATA_WIDTH-1:0]       ex_regst                   ,//ex_regst
     input       [`LSU_OPT_WIDTH-1:0]    ex_lsu_opt                 ,
+    input ex_lsu_lden,
+    input ex_lsu_sten,
     input       [`PC_WIDTH-1:0]         ex_diff_pc                 ,
 //r/w data memory from/to axi_rw
     output wire                         mem_valid_o,
@@ -26,6 +28,8 @@ module mem_stage(
     output      [`REG_ADDR_WIDTH-1:0]   mem_reg_waddr              ,// register write address
     output      [`DATA_WIDTH-1:0]       mem_alu_res                ,
     output      [`LSU_OPT_WIDTH-1:0]    mem_lsu_opt                ,
+    output                              mem_lsu_lden,
+    output                              mem_lsu_sten,
     output      [`PC_WIDTH-1:0]         mem_diff_pc                ,
 
     output logic     [`DATA_WIDTH-1:0]       mem_regld                  ,
@@ -41,12 +45,12 @@ module mem_stage(
     output                              ready_mem2ex                
 
 );
-    logic mem_lden, mem_sten, mem_ldst_en;
-    assign mem_lden = ((mem_lsu_opt == `LSU_LB) || (mem_lsu_opt == `LSU_LH) || (mem_lsu_opt == `LSU_LW) || (mem_lsu_opt == `LSU_LD) || 
-                      (mem_lsu_opt == `LSU_LBU) || (mem_lsu_opt == `LSU_LHU) || (mem_lsu_opt == `LSU_LWU)) ? 1 : 0 ;
+    //logic mem_lden, mem_sten, mem_ldst_en;
+    //assign mem_lden = ((mem_lsu_opt == `LSU_LB) || (mem_lsu_opt == `LSU_LH) || (mem_lsu_opt == `LSU_LW) || (mem_lsu_opt == `LSU_LD) || 
+                      //(mem_lsu_opt == `LSU_LBU) || (mem_lsu_opt == `LSU_LHU) || (mem_lsu_opt == `LSU_LWU)) ? 1 : 0 ;
 
-    assign mem_sten = ((mem_lsu_opt == `LSU_SB) || (mem_lsu_opt == `LSU_SH) || (mem_lsu_opt == `LSU_SW) || (mem_lsu_opt == `LSU_SD)) ? 1 : 0 ;
-    assign mem_ldst_en = mem_lden | mem_sten;
+    //assign mem_sten = ((mem_lsu_opt == `LSU_SB) || (mem_lsu_opt == `LSU_SH) || (mem_lsu_opt == `LSU_SW) || (mem_lsu_opt == `LSU_SD)) ? 1 : 0 ;
+    //assign mem_ldst_en = mem_lden | mem_sten;
 //------------------------------------------------------------------------------
 //  EX-MEM REG  
 //------------------------------------------------------------------------------
@@ -66,6 +70,8 @@ ex_mem u_ex_mem(
     .ex_alu_res                        (ex_alu_res                ),
     .ex_reg2_rdata                     (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+    .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
 
     .mem_inst                          (mem_inst                  ),
@@ -74,6 +80,8 @@ ex_mem u_ex_mem(
     .mem_alu_res                       (mem_alu_res               ),
     .mem_reg2_rdata                    (mem_reg2_rdata            ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
+    .mem_lsu_lden(mem_lsu_lden),
+    .mem_lsu_sten(mem_lsu_sten),
     .mem_diff_pc                       (mem_diff_pc               ) 
 );
 //------------------------------------------------------------------------------
@@ -91,8 +99,8 @@ ex_mem u_ex_mem(
           lsu_valid = 1'b1;
     end
 
-    assign mem_valid_o   =  mem_ldst_en ? 1 : 0; //ld or st occupy the axi
-    assign mem_rw_req_o  =  mem_sten ? 1 : 0;//1:store(write), 0：load(read)
+    assign mem_valid_o   =  mem_lsu_lden | mem_lsu_sten; //ld or st occupy the axi
+    assign mem_rw_req_o  =  mem_lsu_sten ;//1:store(write), 0：load(read)
     assign mem_rw_addr_i =  mem_alu_res;
 
 //READ FROM AXI_RW
