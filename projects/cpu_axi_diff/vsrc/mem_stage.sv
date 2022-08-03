@@ -19,7 +19,7 @@ module mem_stage(
     input  wire [`AXI_DATA_WIDTH-1: 0]  mem_data_read_i,
     output wire [`AXI_DATA_WIDTH-1: 0]  mem_data_write_o,           // rs2 from previous stage
     output wire [`AXI_ADDR_WIDTH-1: 0]  mem_rw_addr_i,           // compute result from previous stage
-    output wire [1:0]                   mem_rw_size_o,
+    output logic [1:0]                   mem_rw_size_o,
     input       [1:0]                   mem_rw_resp_i,
     output wire [`AXI_DATA_WIDTH/8-1:0] mem_write_mask_o,
 //to next stage
@@ -45,12 +45,7 @@ module mem_stage(
     output                              ready_mem2ex                
 
 );
-    //logic mem_lden, mem_sten, mem_ldst_en;
-    //assign mem_lden = ((mem_lsu_opt == `LSU_LB) || (mem_lsu_opt == `LSU_LH) || (mem_lsu_opt == `LSU_LW) || (mem_lsu_opt == `LSU_LD) || 
-                      //(mem_lsu_opt == `LSU_LBU) || (mem_lsu_opt == `LSU_LHU) || (mem_lsu_opt == `LSU_LWU)) ? 1 : 0 ;
 
-    //assign mem_sten = ((mem_lsu_opt == `LSU_SB) || (mem_lsu_opt == `LSU_SH) || (mem_lsu_opt == `LSU_SW) || (mem_lsu_opt == `LSU_SD)) ? 1 : 0 ;
-    //assign mem_ldst_en = mem_lden | mem_sten;
 //------------------------------------------------------------------------------
 //  EX-MEM REG  
 //------------------------------------------------------------------------------
@@ -88,6 +83,7 @@ ex_mem u_ex_mem(
 //  MEM-AXI_RW  
 //------------------------------------------------------------------------------
     logic handshake_done;
+    logic mem_ldst_en;
     assign handshake_done = mem_valid_o & mem_ready_i;
 
     always @(*) begin
@@ -99,9 +95,30 @@ ex_mem u_ex_mem(
           lsu_valid = 1'b1;
     end
 
-    assign mem_valid_o   =  mem_lsu_lden | mem_lsu_sten; //ld or st occupy the axi
+    assign mem_ldst_en   = mem_lsu_lden | mem_lsu_sten;
+    assign mem_valid_o   =  mem_ldst_en; //ld or st occupy the axi
     assign mem_rw_req_o  =  mem_lsu_sten ;//1:store(write), 0：load(read)
     assign mem_rw_addr_i =  mem_alu_res;
+
+    
+    always_comb begin
+        case(mem_lsu_opt)
+            `LSU_LB: mem_rw_size_o = mem_ldst_en ? 2'b00 : 2'b00;
+            `LSU_LH: mem_rw_size_o = mem_ldst_en ? 2'b01 : 2'b00;
+            `LSU_LW: mem_rw_size_o = mem_ldst_en ? 2'b10 : 2'b00;   
+            `LSU_LD: mem_rw_size_o = mem_ldst_en ? 2'b11 : 2'b00;
+
+            `LSU_LBU:mem_rw_size_o = mem_ldst_en ? 2'b00 : 2'b00;
+            `LSU_LHU:mem_rw_size_o = mem_ldst_en ? 2'b01 : 2'b00;
+            `LSU_LWU:mem_rw_size_o = mem_ldst_en ? 2'b10 : 2'b00;
+
+            `LSU_SB: mem_rw_size_o = mem_ldst_en ? 2'b00 : 2'b00;
+            `LSU_SH: mem_rw_size_o = mem_ldst_en ? 2'b01 : 2'b00;
+            `LSU_SW: mem_rw_size_o = mem_ldst_en ? 2'b10 : 2'b00;
+            `LSU_SD: mem_rw_size_o = mem_ldst_en ? 2'b11 : 2'b00;
+            default:mem_rw_size_o = 2'b00;
+        endcase
+    end
 
 //READ FROM AXI_RW
     assign rdata = (handshake_done)? mem_data_read_i : 64'h0;
@@ -109,7 +126,7 @@ ex_mem u_ex_mem(
 //WRITE TO AXI_RW
     assign mem_data_write_o = mem_reg2_rdata;
     assign mem_write_mask_o = wmask; 
-    assign mem_rw_size_o = axi_size;//axi wirte size
+    //assign mem_rw_size_o = axi_size;//axi wirte size
 
 //------------------------------------------------------------------------------
 //  4.MEM  
