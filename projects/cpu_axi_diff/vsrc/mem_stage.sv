@@ -89,7 +89,7 @@ ex_mem u_ex_mem(
     always @(*) begin
       if(!rst_n)
           lsu_valid = 1'b0;
-      else if(!handshake_done && mem_lsu_opt != `LSU_NOP && mem_lsu_opt != 'h0)
+      else if(!handshake_done && mem_ldst_en)
           lsu_valid = 1'b0;
       else
           lsu_valid = 1'b1;
