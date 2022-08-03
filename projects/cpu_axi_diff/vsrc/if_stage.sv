@@ -54,7 +54,7 @@ always @( posedge clk ) begin
   end
   else begin
     if_addr <= next_pc;
-    if_inst <= if_data_read[31:0];
+    //if_inst <= if_data_read[31:0];
     fetched <= 0;
   end
 end
