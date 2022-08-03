@@ -146,6 +146,7 @@ module SimTop(
         .rw_addr_i                      (rw_addr_i),
         .rw_size_i                      (rw_size_i),
         .rw_resp_o                      (rw_resp_o),
+        .rw_wmask_i                     (rw_wmask),//for write' 
 /*//IF    
         .m0_rw_valid_i                  (if_valid),
         .m0_rw_ready_o                  (if_ready),
@@ -164,7 +165,7 @@ module SimTop(
         .m1_rw_addr_i                   (mem_addr),
         .m1_rw_size_i                   (mem_size),
         .m1_rw_resp_o                   (mem_resp),*/
-        .m1_write_mask_i                (mem_wmask),//for write' 
+        
 
         .axi_aw_ready_i                 (aw_ready),
         .axi_aw_valid_o                 (aw_valid),
@@ -225,6 +226,7 @@ module SimTop(
     logic [  63:0]         rw_addr_i;    
     logic [   1:0]         rw_size_i;    
     logic [   1:0]         rw_resp_o;    
+    logic [7:0] rw_wmask;
     wire if_valid;
     wire if_ready;
     wire if_req = `REQ_READ;
@@ -273,7 +275,8 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .data_write_i    ( data_write_i    ),
     .rw_addr_i       ( rw_addr_i       ),
     .rw_size_i       ( rw_size_i       ),
-    .rw_resp_o       ( rw_resp_o       )
+    .rw_resp_o       ( rw_resp_o       ),
+    .rw_wmask(rw_wmask)
 );
 
     top u_cpu(

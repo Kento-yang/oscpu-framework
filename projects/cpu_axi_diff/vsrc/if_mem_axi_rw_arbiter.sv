@@ -28,7 +28,8 @@ module if_mem_axi_rw_arbiter(
     output             [  63:0]         data_write_i               ,
     output             [  63:0]         rw_addr_i                  ,
     output             [   1:0]         rw_size_i                  ,
-    input              [   1:0]         rw_resp_o                  
+    input              [   1:0]         rw_resp_o                  ,
+    output             [   7:0]         rw_wmask                  
 );
 //------------------------------------------------------------------------------
 //  IF-MEM Arbiter
@@ -49,6 +50,7 @@ module if_mem_axi_rw_arbiter(
     assign data_write_i  = (grant == MASTER_1) ? mem_data_write  : 64'b0;
     assign rw_addr_i     = (grant == MASTER_1) ? mem_addr  : if_addr;
     assign rw_size_i     = (grant == MASTER_1) ? mem_size  : if_size;
+    assign rw_wmask      = (grant == MASTER_1) ? mem_wmask : 8'b0;
 
     assign mem_ready     = (grant == MASTER_1) ? rw_ready_o  : 1'b0;
     assign mem_data_read = (grant == MASTER_1) ? data_read_o : 1'b0;

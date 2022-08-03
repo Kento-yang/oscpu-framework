@@ -67,7 +67,7 @@ module axi_rw # (
     input  [AXI_DATA_WIDTH:0]           rw_addr_i,
     input  [1:0]                        rw_size_i,
     output [1:0]                        rw_resp_o,
-
+    input  [7:0]                        rw_wmask_i,
 //for arbitration
 //IF interface (read only)
 /*    input                                  m0_rw_valid_i,
@@ -87,9 +87,9 @@ module axi_rw # (
     input  [RW_DATA_WIDTH-1:0]              m1_data_write_i,
     input  [AXI_DATA_WIDTH-1:0]             m1_rw_addr_i,
     input  [1:0]                            m1_rw_size_i,
-    output [1:0]                            m1_rw_resp_o,*/
+    output [1:0]                            m1_rw_resp_o,
 
-    input  [7:0]                            m1_write_mask_i,//for write
+    input  [7:0]                            m1_write_mask_i,//for write*/
 
     // Advanced eXtensible Interface
     input                               axi_aw_ready_i,
@@ -394,7 +394,7 @@ module axi_rw # (
     //Write data channel signals
     assign axi_w_valid_o  = w_state_write;
     assign axi_w_data_o   = data_write_i;        //assume: YSYX210366_AXI_DATA_WIDTH = YSYX210366_RW_DATA_WIDTH
-    assign axi_w_strb_o   = m1_write_mask_i;
+    assign axi_w_strb_o   = rw_wmask_i;
     assign axi_w_last_o   = len == axi_len;
 
     //Write response channel signals
