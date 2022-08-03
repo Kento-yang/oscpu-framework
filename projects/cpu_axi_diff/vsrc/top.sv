@@ -1,180 +1,540 @@
-`include "defines.sv"
-module top(
-  input  logic                      i_clk           ,
-  input  logic                      i_rst_n         ,
-  // aw:
-  input  logic                      i_axi_aw_ready  ,         
-  output logic                      o_axi_aw_valid  ,
-  output logic [`CPU_WIDTH-1:0]     o_axi_aw_addr   ,
-  output logic [2:0]                o_axi_aw_prot   ,
-  output logic [3:0]                o_axi_aw_id     ,
-  output logic                      o_axi_aw_user   ,
-  output logic [7:0]                o_axi_aw_len    ,
-  output logic [2:0]                o_axi_aw_size   ,
-  output logic [1:0]                o_axi_aw_burst  ,
-  output logic                      o_axi_aw_lock   ,
-  output logic [3:0]                o_axi_aw_cache  ,
-  output logic [3:0]                o_axi_aw_qos    ,
-  output logic [3:0]                o_axi_aw_region ,
-  // w:
-  input  logic                      i_axi_w_ready   ,                
-  output logic                      o_axi_w_valid   ,
-  output logic [`CPU_WIDTH-1:0]     o_axi_w_data    ,
-  output logic [`CPU_WIDTH/8-1:0]   o_axi_w_strb    ,
-  output logic                      o_axi_w_last    ,
-  output logic                      o_axi_w_user    ,
-  // b:
-  output logic                      o_axi_b_ready   ,                
-  input  logic                      i_axi_b_valid   ,
-  input  logic [1:0]                i_axi_b_resp    ,                 
-  input  logic [3:0]                i_axi_b_id      ,
-  input  logic                      i_axi_b_user    ,
-  // ar:
-  input  logic                      i_axi_ar_ready  ,                
-  output logic                      o_axi_ar_valid  ,
-  output logic [`CPU_WIDTH-1:0]     o_axi_ar_addr   ,
-  output logic [2:0]                o_axi_ar_prot   ,
-  output logic [3:0]                o_axi_ar_id     ,
-  output logic                      o_axi_ar_user   ,
-  output logic [7:0]                o_axi_ar_len    ,
-  output logic [2:0]                o_axi_ar_size   ,
-  output logic [1:0]                o_axi_ar_burst  ,
-  output logic                      o_axi_ar_lock   ,
-  output logic [3:0]                o_axi_ar_cache  ,
-  output logic [3:0]                o_axi_ar_qos    ,
-  output logic [3:0]                o_axi_ar_region ,
-  // r:
-  output logic                      o_axi_r_ready   ,                 
-  input  logic                      i_axi_r_valid   ,                
-  input  logic [1:0]                i_axi_r_resp    ,
-  input  logic [`CPU_WIDTH-1:0]     i_axi_r_data    ,
-  input  logic                      i_axi_r_last    ,
-  input  logic [3:0]                i_axi_r_id      ,
-  input  logic                      i_axi_r_user    ,
-  output logic                      s_uart_out_valid,
-  output logic [7:0]                s_uart_out_char
+`include "rvseed_defines.sv"
+//`include "vsrc/utils/syncex_pc_reset_async_release.sv"
+//handshake top
+
+module top (
+    input                               clk                        ,
+    input                               reset_n                    ,
+//IF INTTERFACE
+    output                              if_valid                   ,
+    input                               if_ready                   ,
+    input              [  63:0]         if_data_read               ,
+    output             [  63:0]         if_addr                    ,
+    output             [   1:0]         if_size                    ,
+    input              [   1:0]         if_resp                    ,
+//MEM INTTERFACE
+    output                              mem_valid                   ,
+    input                               mem_ready                   ,
+    output                              mem_rw_req                  ,
+    input              [  63:0]         mem_data_read               ,
+    output             [  63:0]         mem_data_write              ,
+    output             [  63:0]         mem_addr                    ,
+    output             [   1:0]         mem_size                    ,
+    input              [   1:0]         mem_resp                    ,
+    output             [   7:0]         mem_wmask                   
 );
-  // 1.rst : ////////////////////////////////////////////////////////
-  logic rst_n_sync;
-  stl_rst u_stl_rst(
-  	.i_clk        (i_clk      ),
-    .i_rst_n      (i_rst_n    ),
-    .o_rst_n_sync (rst_n_sync )
-  );
+    logic    [`PC_WIDTH-1 : 0]         next_pc;           
+    logic    [`DATA_WIDTH-1:0]         reg10_a0;                    
 
-  // 2.cpu core:///////////////////////////////////////////////////
+    //for align pc with reg wr, and generate special pc means data/jump adventure.
+    logic   [`PC_WIDTH-1:0]     id_diff_pc  ,
+                                ex_diff_pc  ,
+                                mem_diff_pc ,
+                                wb_diff_pc  ;
+    //for  inst
+    logic   [`INST_WIDTH-1:0]   if_inst     ,
+                                id_inst     , 
+                                ex_inst     , 
+                                mem_inst    , 
+                                wb_inst     ;
+//------------------------------------------------------------------------------
+// Reset_tree.
+//------------------------------------------------------------------------------
+    logic                       rst_n;
 
-  uni_if #(.ADDR_W(`CPU_WIDTH), .DATA_W(`CPU_WIDTH)) ifu_uni_if();
-  uni_if #(.ADDR_W(`CPU_WIDTH), .DATA_W(`CPU_WIDTH)) lsu_uni_if();
+sync_reset_async_release u_reset_tree(
+    .clock                             (clk                       ),
+    .reset_n                           (reset_n                   ),
+    
+    .rst_n                             (rst_n                     ) 
+);
+//------------------------------------------------------------------------------
+//  1.IF STAGE
+//------------------------------------------------------------------------------
+    logic                       bubble_id_ex;
+//handshake
+    logic   ready_id2if;
+    logic   valid_if2id;
+    logic   fetched;
+    logic  [`PC_WIDTH-1:0]   if_pc;
+    //logic pc_add_imm_flag;
+if_stage u_if_stage(
+    .clk                               (clk                       ),
+    .rst_n                             (rst_n                     ),
 
-  core_top u_core_top(
-    .i_clk       (i_clk       ),
-    .i_rst_n     (rst_n_sync  ),
-    .UniIf_ifu_M (ifu_uni_if  ),
-    .UniIf_lsu_M (lsu_uni_if  ),
-    .s_uart_out_valid(s_uart_out_valid),
-    .s_uart_out_char (s_uart_out_char)
-  );
+    .if_valid                          (if_valid                  ),
+    .if_ready                          (if_ready                  ),
+    .if_data_read                      (if_data_read              ),
+    .if_addr                           (if_addr                   ),
+    .if_size                           (if_size                   ),
+    .if_resp                           (if_resp                   ),
+    .fetched                           (fetched                   ),
 
-  // 3.arbite uni if://////////////////////////////////////////////
-  logic uniID;  // 1: lsu uni if, 0: ifu uni if. 
+    //.curr_pc                           (curr_pc                   ),
+    .ex_pc                             (ex_pc                     ),
+    .ex_branch                         (ex_branch                 ),
+    .ex_zero                           (ex_zero                   ),
+    .ex_jump                           (ex_jump                   ),
+    .ex_imm                            (ex_imm                    ),
+    .ex_reg1_rdata                     (ex_reg1_rdata             ),
+    .ex_jalr                           (ex_jalr                   ),
+    .bubble_id_ex                      (bubble_id_ex              ),
 
-  always_ff @(posedge i_clk or negedge i_rst_n) begin
-    if(!i_rst_n)begin
-      uniID <= 1'b0;
-    end
-    else if(lsu_uni_if.valid & lsu_uni_if.ready)begin
-      uniID <= 1'b0;
-    end
-    else if(ifu_uni_if.valid & ifu_uni_if.ready & lsu_uni_if.valid)begin
-      uniID <= 1'b1;
-    end
+    .if_inst                           (if_inst                   ),
+    .if_pc                             (if_pc                     ),
+    .next_pc                           (next_pc                   ),
+    .bpu_bubble                        (bpu_bubble                ), 
+
+    .ready_id2if                      (ready_id2if               ),
+    .valid_if2id                      (valid_if2id               ) 
+);
+//------------------------------------------------------------------------------
+//  2.ID STAGE
+//------------------------------------------------------------------------------
+    //logic pipe_wen_id;
+    logic bpu_bubble;
+    //from wbu
+    logic                              wb_reg_wen;//from mem_wb
+    logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr; 
+    logic   [`DATA_WIDTH-1:0]          wb_reg_wdata;
+
+    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
+    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
+    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr;                // register write address
+    logic                              ex_reg_wen;
+    logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;
+      
+    logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr;              // register write address   
+    logic                                mem_reg_wen;
+    logic    [`LSU_OPT_WIDTH-1 : 0]      mem_lsu_opt;
+    logic    [`DATA_WIDTH-1:0]           mem_alu_res;
+
+    logic    [`DATA_WIDTH-1:0]           ex_alu_res;
+
+    logic  [`DATA_WIDTH-1:0]           mem_regld   ;
+
+    logic            [`PC_WIDTH-1:0]            id_pc   ;
+    logic                                       id_branch;
+    logic                                       id_jump;
+    logic                                       id_jalr;
+    logic                                       id_reg_wen;
+    logic            [`REG_ADDR_WIDTH-1 : 0]    id_reg_waddr;  // register write address
+    logic            [`REG_ADDR_WIDTH-1 : 0]    id_reg1_raddr;  // register1 rd address
+    logic            [`REG_ADDR_WIDTH-1 : 0]    id_reg2_raddr;  // register2 rd address
+    logic            [`DATA_WIDTH-1:0]          id_arb_rdata1;
+    logic            [`DATA_WIDTH-1:0]          id_arb_rdata2;
+    logic            [`DATA_WIDTH-1:0]          id_imm;        // immediate
+    logic            [`ALU_OP_WIDTH-1 : 0]      id_alu_op;
+    logic            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel;
+    logic            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt; 
+    logic id_lsu_lden;
+    logic id_lsu_sten;
+    
+//to ex mux_ldst_bp
+     logic                              bp_ld_st_ctrl;
+//handshake
+logic ready_ex2id ,valid_id2ex;
+
+wire [`REG_BUS] regs[0 : 31];//for difftest
+id_stage u_id_stage(
+    .clk                               (clk                       ),
+    .rst_n                             (rst_n                     ),
+    //.pipe_wen                          (pipe_wen_id                  ),
+    //.bubble                            (bubble                    ),
+    .bpu_bubble                        (bpu_bubble                ),
+    .wb_reg_wen                        (wb_reg_wen                ),
+    .wb_reg_waddr                      (wb_reg_waddr              ),
+    .wb_reg_wdata                      (wb_reg_wdata              ),
+    .ex_reg1_raddr                     (ex_reg1_raddr             ),
+    .ex_reg2_raddr                     (ex_reg2_raddr             ),
+    .ex_reg_waddr                      (ex_reg_waddr              ),
+    .ex_reg_wen                        (ex_reg_wen                ),
+    .ex_lsu_opt                        (ex_lsu_opt                ),
+    .mem_reg_waddr                     (mem_reg_waddr             ),
+    .mem_reg_wen                       (mem_reg_wen               ),
+    .mem_lsu_opt                       (mem_lsu_opt               ),
+    .mem_alu_res                       (mem_alu_res               ),
+    .ex_alu_res                        (ex_alu_res                ),
+    .mem_regld                         (mem_regld                 ),
+
+    .if_inst                           (if_inst                   ),
+    .if_pc                             (if_pc                     ),
+
+    .id_inst                           (id_inst                   ),
+    .id_pc                             (id_pc                     ),
+    .id_branch                         (id_branch                 ),
+    .id_jump                           (id_jump                   ),
+    .id_jalr                           (id_jalr                   ),
+    .id_reg_wen                        (id_reg_wen                ),
+    .id_reg_waddr                      (id_reg_waddr              ),
+    .id_reg1_raddr                     (id_reg1_raddr             ),
+    .id_reg2_raddr                     (id_reg2_raddr             ),
+    .id_arb_rdata1                     (id_arb_rdata1             ),
+    .id_arb_rdata2                     (id_arb_rdata2             ),
+    .id_imm                            (id_imm                    ),
+    .id_alu_op                         (id_alu_op                 ),
+    .id_alu_src_sel                    (id_alu_src_sel            ),
+    .id_lsu_opt                        (id_lsu_opt                ),
+    .id_lsu_lden(id_lsu_lden),
+    .id_lsu_sten(id_lsu_sten),
+    .id_diff_pc                        (id_diff_pc                ),
+    .reg10_a0                          (reg10_a0                  ),
+    .bubble_id_ex                      (bubble_id_ex              ),
+    .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
+
+    .regs                              (regs                      ),//for difftest
+    .valid_if2id                       (valid_if2id               ),
+    .ready_ex2id                       (ready_ex2id              ),
+    .valid_id2ex                       (valid_id2ex              ),
+    .ready_id2if                       (ready_id2if             ) 
+);
+//------------------------------------------------------------------------------
+//  3.EX STAGE
+//------------------------------------------------------------------------------
+    logic   [`PC_WIDTH-1:0]     ex_pc;
+    logic                       ex_branch;                          // ex_branch type 
+    logic                       ex_zero;                            // alu result is ex_zero
+    logic                       ex_jump;                            // ex_jump type 
+    logic   [`DATA_WIDTH-1:0]   ex_imm;                             // immediate  
+    logic   [`DATA_WIDTH-1:0]   ex_reg1_rdata;                      // rs1    ex_jalr:rs1+ex_imm
+    logic                       ex_jalr;
+    logic             [`DATA_WIDTH-1:0]          ex_regst     ;     //ex_reg2_rdata
+    logic                       ex_alu_res_valid;
+
+    logic ex_lsu_lden,ex_lsu_sten;
+//handshake
+    logic ready_mem2ex, valid_ex2mem;
+ex_stage u_ex_stage(
+    .clk                               (clk                       ),
+    .rst_n                             (rst_n                     ),
+    .bpu_bubble                        (bpu_bubble                ),
+    .bubble_id_ex                      (bubble_id_ex              ),
+    .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
+    .mem_regld                         (mem_regld                 ),
+
+    .id_inst                           (id_inst                   ),
+    .id_pc                             (id_pc                     ),
+    .id_branch                         (id_branch                 ),
+    .id_jump                           (id_jump                   ),
+    .id_jalr                           (id_jalr                   ),
+    .id_reg_wen                        (id_reg_wen                ),
+    .id_reg_waddr                      (id_reg_waddr              ),
+    .id_reg1_raddr                     (id_reg1_raddr             ),
+    .id_reg2_raddr                     (id_reg2_raddr             ),
+    .id_arb_rdata1                     (id_arb_rdata1             ),
+    .id_arb_rdata2                     (id_arb_rdata2             ),
+    .id_imm                            (id_imm                    ),
+    .id_alu_op                         (id_alu_op                 ),
+    .id_alu_src_sel                    (id_alu_src_sel            ),
+    .id_lsu_opt                        (id_lsu_opt                ),
+    .id_lsu_lden(id_lsu_lden),
+    .id_lsu_sten(id_lsu_sten),
+    .id_diff_pc                        (id_diff_pc                ),
+
+    .ex_pc                             (ex_pc                     ),
+    .ex_branch                         (ex_branch                 ),
+    .ex_zero                           (ex_zero                   ),
+    .ex_jalr                           (ex_jalr                   ),
+    .ex_jump                           (ex_jump                   ),
+    .ex_imm                            (ex_imm                    ),
+    .ex_reg1_rdata                     (ex_reg1_rdata             ),
+    .ex_inst                           (ex_inst                   ),
+    .ex_reg_wen                        (ex_reg_wen                ),
+    .ex_reg_waddr                      (ex_reg_waddr              ),
+    .ex_alu_res                        (ex_alu_res                ),
+    .ex_regst                          (ex_regst                  ),
+    .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+    .ex_lsu_sten(ex_lsu_sten),
+    .ex_diff_pc                        (ex_diff_pc                ),
+    .ex_alu_res_valid                  (ex_alu_res_valid),//div res valid signal.
+
+    .valid_id2ex                       (valid_id2ex               ),
+    .ready_mem2ex                      (ready_mem2ex              ),
+    .valid_ex2mem                      (valid_ex2mem              ),
+    .ready_ex2id                       (ready_ex2id  ) 
+);
+
+//------------------------------------------------------------------------------
+//  4.MEM STAGE
+//------------------------------------------------------------------------------
+//handshake
+    logic                                   ready_wb2mem = 1, valid_mem2wb;
+    logic mem_lsu_valid;
+    logic mem_lsu_lden,mem_lsu_sten;
+mem_stage u_mem_stage(
+    .clk                               (clk                       ),
+    .rst_n                             (rst_n                     ),
+    .ex_inst                           (ex_inst                   ),
+    .ex_reg_wen                        (ex_reg_wen                ),
+    .ex_reg_waddr                      (ex_reg_waddr              ),
+    .ex_alu_res                        (ex_alu_res                ),
+    .ex_regst                          (ex_regst                  ),
+    .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+    .ex_lsu_sten(ex_lsu_sten),
+    .ex_diff_pc                        (ex_diff_pc                ),
+//r/w data memory from/to axi_rw
+    .mem_valid_o                       (mem_valid                 ),
+    .mem_ready_i                       (mem_ready                 ),
+    .mem_rw_req_o                      (mem_rw_req                ),//1
+    .mem_data_read_i                   (mem_data_read             ),
+    .mem_data_write_o                  (mem_data_write            ),
+    .mem_rw_addr_i                     (mem_addr                  ),
+    .mem_rw_size_o                     (mem_size                  ),
+    .mem_rw_resp_i                     (mem_resp                  ),
+    .mem_write_mask_o                  (mem_wmask                 ),
+
+    .mem_inst                          (mem_inst                  ),
+    .mem_reg_wen                       (mem_reg_wen               ),
+    .mem_reg_waddr                     (mem_reg_waddr             ),
+    .mem_alu_res                       (mem_alu_res               ),
+    .mem_lsu_opt                       (mem_lsu_opt               ),
+    .mem_lsu_lden(mem_lsu_lden),
+    .mem_lsu_sten(mem_lsu_sten),
+    .mem_diff_pc                      (mem_diff_pc               ),
+    .mem_regld                         (mem_regld                 ),
+
+    .lsu_valid(mem_lsu_valid),
+    .valid_ex2mem                      (valid_ex2mem              ),
+    .ready_wb2mem                      (ready_wb2mem              ),
+    .valid_mem2wb                      (valid_mem2wb              ),
+    .ready_mem2ex                      (ready_mem2ex              ) 
+);
+//------------------------------------------------------------------------------
+//  5.WB STAGE
+//------------------------------------------------------------------------------
+wb_stage u_wb_stage(
+    .clk                               (clk                       ),
+    .rst_n                             (rst_n                     ),
+    .mem_inst                          (mem_inst                  ),
+    .mem_reg_wen                       (mem_reg_wen               ),
+    .mem_reg_waddr                     (mem_reg_waddr             ),
+    .mem_regld                         (mem_regld                 ),
+    .mem_alu_res                       (mem_alu_res               ),
+    .mem_lsu_opt                       (mem_lsu_opt               ),
+    .mem_diff_pc                       (mem_diff_pc               ),
+
+    .wb_reg_wdata                      (wb_reg_wdata              ),
+    .wb_diff_pc                        (wb_diff_pc                ),
+    .wb_inst                           (wb_inst                   ),
+    .wb_reg_waddr                      (wb_reg_waddr              ),
+    .wb_reg_wen                        (wb_reg_wen                ),
+
+    .valid_mem2wb                       (valid_mem2wb               ),
+    .ready_next_i                      ( 1             ),
+    .valid_o_next                      (               ),
+    .ready_wb2mem                       (ready_wb2mem               ) 
+);
+
+
+  
+//------------------------------------------------------------------------------
+//  XiangShan Difftest
+//------------------------------------------------------------------------------
+reg cmt_wen;
+reg [7:0] cmt_wdest;
+reg [`REG_BUS] cmt_wdata;
+reg [`REG_BUS] cmt_pc;
+reg [31:0] cmt_inst;
+reg cmt_valid;
+reg trap;
+reg [7:0] trap_code;
+reg [63:0] cycleCnt;
+reg [63:0] instrCnt;
+reg [`REG_BUS] regs_diff_npc [0 : 31];
+
+wire inst_valid; //= fetched;
+
+//commit need 
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
+
+
+//initial begin
+//    $monitor("cmt_wdest is %h",cmt_wdest);
+//    $monitor("cmt_wdata is %h",cmt_wdata);
+//end
+logic real_clk;
+always @(posedge clk) begin
+  if (!rst_n) begin
+    real_clk <= 0;
   end
+  else
+    real_clk <= ~real_clk;
+end
 
-  uni_if #(.ADDR_W(`CPU_WIDTH), .DATA_W(`CPU_WIDTH)) uni_if();
 
-  assign uni_if.valid  = uniID ? lsu_uni_if.valid  : ifu_uni_if.valid ;
-  assign uni_if.reqtyp = uniID ? lsu_uni_if.reqtyp : ifu_uni_if.reqtyp;
-  assign uni_if.addr   = uniID ? lsu_uni_if.addr   : ifu_uni_if.addr  ;
-  assign uni_if.wdata  = uniID ? lsu_uni_if.wdata  : ifu_uni_if.wdata ;
-  assign uni_if.size   = uniID ? lsu_uni_if.size   : ifu_uni_if.size  ;
 
-  assign lsu_uni_if.ready = uniID ? uni_if.ready : 0;
-  assign lsu_uni_if.rdata = uniID ? uni_if.rdata : 0;
-  assign lsu_uni_if.resp  = uniID ? uni_if.resp  : 0;
+always @(negedge clk) begin
+  if (!rst_n) begin
+    {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, trap, trap_code, cycleCnt, instrCnt} <= 0;
+  end
+  else if (~trap) begin
+    cmt_wen   <= wb_reg_wen;//rd_w_ena;
+    cmt_wdest <= {3'd0, wb_reg_waddr};//{3'd0, rd_w_addr};
+    cmt_wdata <= wb_reg_wdata;//rd_data;
+    cmt_pc <= wb_diff_pc;//pc;
+    cmt_inst <= wb_inst;//inst;
+    cmt_valid <= inst_valid;//inst_valid;
 
-  assign ifu_uni_if.ready = uniID ? 0 : uni_if.ready;
-  assign ifu_uni_if.rdata = uniID ? 0 : uni_if.rdata;
-  assign ifu_uni_if.resp  = uniID ? 0 : uni_if.resp ;
+    regs_diff_npc <= regs;
 
-  // 4.uni_if 2 axi_if : //////////////////////////////////////////
+    trap <= wb_inst[6:0] == 7'h6b;
+    trap_code <= regs[10][7:0];
+    cycleCnt <= cycleCnt + 1;
+    instrCnt <= instrCnt + inst_valid;
+  end
+end
 
-  axi4_if #(.ADDR_W(`CPU_WIDTH), .DATA_W(`CPU_WIDTH), .ID_W(4), .USER_W(1)) axi_if();
+DifftestInstrCommit DifftestInstrCommit(
+  .clock              (clk),
+  .coreid             (0),
+  .index              (0),
+  .valid              (cmt_valid),
+  .pc                 (cmt_pc),
+  .instr              (cmt_inst),
+  .special (),
+  .skip               (0),
+  .isRVC              (0),
+  .scFailed           (0),
+  .wen                (cmt_wen),
+  .wdest              (cmt_wdest),
+  .wdata              (cmt_wdata)
+);
 
-  uni2axi #(
-    .UNI_ADDR_WIDTH (`CPU_WIDTH ),
-    .UNI_DATA_WIDTH (`CPU_WIDTH ),
-    .AXI_ADDR_WIDTH (`CPU_WIDTH ),
-    .AXI_DATA_WIDTH (`CPU_WIDTH ),
-    .AXI_ID_WIDTH   (4          ),
-    .AXI_USER_WIDTH (1          )
-  ) u_uni2axi (
-    .i_clk   (i_clk     ),
-    .i_rst_n (rst_n_sync),
-    .UniIf_S (uni_if    ),
-    .AxiIf_M (axi_if    )
-  );
+DifftestArchIntRegState DifftestArchIntRegState (
+  .clock              (clk),
+  .coreid             (0),
+  .gpr_0              (regs_diff_npc[0]),
+  .gpr_1              (regs_diff_npc[1]),
+  .gpr_2              (regs_diff_npc[2]),
+  .gpr_3              (regs_diff_npc[3]),
+  .gpr_4              (regs_diff_npc[4]),
+  .gpr_5              (regs_diff_npc[5]),
+  .gpr_6              (regs_diff_npc[6]),
+  .gpr_7              (regs_diff_npc[7]),
+  .gpr_8              (regs_diff_npc[8]),
+  .gpr_9              (regs_diff_npc[9]),
+  .gpr_10             (regs_diff_npc[10]),
+  .gpr_11             (regs_diff_npc[11]),
+  .gpr_12             (regs_diff_npc[12]),
+  .gpr_13             (regs_diff_npc[13]),
+  .gpr_14             (regs_diff_npc[14]),
+  .gpr_15             (regs_diff_npc[15]),
+  .gpr_16             (regs_diff_npc[16]),
+  .gpr_17             (regs_diff_npc[17]),
+  .gpr_18             (regs_diff_npc[18]),
+  .gpr_19             (regs_diff_npc[19]),
+  .gpr_20             (regs_diff_npc[20]),
+  .gpr_21             (regs_diff_npc[21]),
+  .gpr_22             (regs_diff_npc[22]),
+  .gpr_23             (regs_diff_npc[23]),
+  .gpr_24             (regs_diff_npc[24]),
+  .gpr_25             (regs_diff_npc[25]),
+  .gpr_26             (regs_diff_npc[26]),
+  .gpr_27             (regs_diff_npc[27]),
+  .gpr_28             (regs_diff_npc[28]),
+  .gpr_29             (regs_diff_npc[29]),
+  .gpr_30             (regs_diff_npc[30]),
+  .gpr_31             (regs_diff_npc[31])
+);
 
-  // 5. assign axi_if to wrapper://///////////////////////////////
+DifftestTrapEvent DifftestTrapEvent(
+  .clock              (clk),
+  .coreid             (0),
+  .valid              (trap),
+  .code               (trap_code),
+  .pc                 (cmt_pc),
+  .cycleCnt           (cycleCnt),
+  .instrCnt           (instrCnt)
+);
 
-  assign axi_if.aw_ready = i_axi_aw_ready   ;
-  assign o_axi_aw_valid  = axi_if.aw_valid  ;
-  assign o_axi_aw_addr   = axi_if.aw_addr   ;
-  assign o_axi_aw_prot   = axi_if.aw_prot   ;
-  assign o_axi_aw_id     = axi_if.aw_id     ;
-  assign o_axi_aw_user   = axi_if.aw_user   ;
-  assign o_axi_aw_len    = axi_if.aw_len    ;
-  assign o_axi_aw_size   = axi_if.aw_size   ;
-  assign o_axi_aw_burst  = axi_if.aw_burst  ;
-  assign o_axi_aw_lock   = axi_if.aw_lock   ;
-  assign o_axi_aw_cache  = axi_if.aw_cache  ;
-  assign o_axi_aw_qos    = axi_if.aw_qos    ;
-  assign o_axi_aw_region = axi_if.aw_region ;
+DifftestCSRState DifftestCSRState(
+  .clock              (clk),
+  .coreid             (0),
+  .priviledgeMode     (`RISCV_PRIV_MODE_M),
+  .mstatus            (0),
+  .sstatus            (0),
+  .mepc               (0),
+  .sepc               (0),
+  .mtval              (0),
+  .stval              (0),
+  .mtvec              (0),
+  .stvec              (0),
+  .mcause             (0),
+  .scause             (0),
+  .satp               (0),
+  .mip                (0),
+  .mie                (0),
+  .mscratch           (0),
+  .sscratch           (0),
+  .mideleg            (0),
+  .medeleg            (0)
+);
 
-  assign axi_if.w_ready  = i_axi_w_ready    ;
-  assign o_axi_w_valid   = axi_if.w_valid   ;
-  assign o_axi_w_data    = axi_if.w_data    ;
-  assign o_axi_w_strb    = axi_if.w_strb    ;
-  assign o_axi_w_last    = axi_if.w_last    ;
-  assign o_axi_w_user    = axi_if.w_user    ;
+DifftestArchFpRegState DifftestArchFpRegState(
+  .clock              (clk),
+  .coreid             (0),
+  .fpr_0              (0),
+  .fpr_1              (0),
+  .fpr_2              (0),
+  .fpr_3              (0),
+  .fpr_4              (0),
+  .fpr_5              (0),
+  .fpr_6              (0),
+  .fpr_7              (0),
+  .fpr_8              (0),
+  .fpr_9              (0),
+  .fpr_10             (0),
+  .fpr_11             (0),
+  .fpr_12             (0),
+  .fpr_13             (0),
+  .fpr_14             (0),
+  .fpr_15             (0),
+  .fpr_16             (0),
+  .fpr_17             (0),
+  .fpr_18             (0),
+  .fpr_19             (0),
+  .fpr_20             (0),
+  .fpr_21             (0),
+  .fpr_22             (0),
+  .fpr_23             (0),
+  .fpr_24             (0),
+  .fpr_25             (0),
+  .fpr_26             (0),
+  .fpr_27             (0),
+  .fpr_28             (0),
+  .fpr_29             (0),
+  .fpr_30             (0),
+  .fpr_31             (0)
+);
+//------------------------------------------------------------------------------
+//  FOR SIM USE DPIC 
+//------------------------------------------------------------------------------
 
-  assign o_axi_b_ready   = axi_if.b_ready   ;
-  assign axi_if.b_valid  = i_axi_b_valid    ;
-  assign axi_if.b_resp   = i_axi_b_resp     ;
-  assign axi_if.b_id     = i_axi_b_id       ;
-  assign axi_if.b_user   = i_axi_b_user     ;
+/*
+import "DPI-C" function bit ebreak_check(input int in_inst);
+always_comb begin:BREAKSIM
+    if(ebreak_check(wb_inst) == 1 )begin
+        $display("input inst = 0x%08x is ebreak!",wb_inst);
+        if(reg10_a0 == `DATA_WIDTH'b0)
+            $display(">>>>>>>>>>>>>>>>HIT GOOD TRAP!!<<<<<<<<<<<<<<<<<");
+        else
+            $display(">>>>>>>>>>>>>>>>HIT BAD TRAP!!<<<<<<<<<<<<<<<<<");
+        $finish();
+    end
+end
 
-  assign axi_if.ar_ready = i_axi_ar_ready   ;
-  assign o_axi_ar_valid  = axi_if.ar_valid  ;
-  assign o_axi_ar_addr   = axi_if.ar_addr   ;
-  assign o_axi_ar_prot   = axi_if.ar_prot   ;
-  assign o_axi_ar_id     = axi_if.ar_id     ;
-  assign o_axi_ar_user   = axi_if.ar_user   ;
-  assign o_axi_ar_len    = axi_if.ar_len    ;
-  assign o_axi_ar_size   = axi_if.ar_size   ;
-  assign o_axi_ar_burst  = axi_if.ar_burst  ;
-  assign o_axi_ar_lock   = axi_if.ar_lock   ;
-  assign o_axi_ar_cache  = axi_if.ar_cache  ;
-  assign o_axi_ar_qos    = axi_if.ar_qos    ;
-  assign o_axi_ar_region = axi_if.ar_region ;
+import "DPI-C" function void diff_read_pc(input longint rtl_pc);
+always_comb begin
+    diff_read_pc(wb_diff_pc);
+end
 
-  assign o_axi_r_ready   = axi_if.r_ready   ;
-  assign axi_if.r_valid  = i_axi_r_valid    ;
-  assign axi_if.r_resp   = i_axi_r_resp     ;
-  assign axi_if.r_data   = i_axi_r_data     ;
-  assign axi_if.r_last   = i_axi_r_last     ;
-  assign axi_if.r_id     = i_axi_r_id       ;
-  assign axi_if.r_user   = i_axi_r_user     ;
-
+import "DPI-C" function void diff_read_ready_ex2id(input bit rtl_ready_ex2id);
+always_comb begin
+    diff_read_ready_ex2id(valid_mem2wb);
+end*/
 
 endmodule
+
+
