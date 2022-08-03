@@ -41,6 +41,12 @@ module mem_stage(
     output                              ready_mem2ex                
 
 );
+    logic mem_lden, mem_sten, mem_ldst_en;
+    assign mem_lden = ((mem_lsu_opt == `LSU_LB) || (mem_lsu_opt == `LSU_LH) || (mem_lsu_opt == `LSU_LW) || (mem_lsu_opt == `LSU_LD) || 
+                      (mem_lsu_opt == `LSU_LBU) || (mem_lsu_opt == `LSU_LHU) || (mem_lsu_opt == `LSU_LWU)) ? 1 : 0 ;
+
+    assign mem_sten = ((mem_lsu_opt == `LSU_SB) || (mem_lsu_opt == `LSU_SH) || (mem_lsu_opt == `LSU_SW) || (mem_lsu_opt == `LSU_SD)) ? 1 : 0 ;
+    assign mem_ldst_en = mem_lden | mem_sten;
 //------------------------------------------------------------------------------
 //  EX-MEM REG  
 //------------------------------------------------------------------------------
@@ -70,7 +76,9 @@ ex_mem u_ex_mem(
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_diff_pc                       (mem_diff_pc               ) 
 );
-//MEM TO AXI_RW
+//------------------------------------------------------------------------------
+//  MEM-AXI_RW  
+//------------------------------------------------------------------------------
     logic handshake_done;
     assign handshake_done = mem_valid_o & mem_ready_i;
 
@@ -83,8 +91,8 @@ ex_mem u_ex_mem(
           lsu_valid = 1'b1;
     end
 
-    assign mem_valid_o = (mem_lsu_opt != `LSU_NOP && mem_lsu_opt != 'h0)? 1 : 0; //ld or st occupy the axi
-    assign mem_rw_req_o = mem_lsu_opt[0] ? 1 : 0;//1:store(write), 0：load(read)
+    assign mem_valid_o   =  mem_ldst_en ? 1 : 0; //ld or st occupy the axi
+    assign mem_rw_req_o  =  mem_sten ? 1 : 0;//1:store(write), 0：load(read)
     assign mem_rw_addr_i =  mem_alu_res;
 
 //READ FROM AXI_RW
