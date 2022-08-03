@@ -142,68 +142,6 @@ module axi_rw # (
     input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
 );
 //------------------------------------------------------------------------------
-//  Arbitration 
-//------------------------------------------------------------------------------
-/*   logic                              rw_valid_i;
-	logic                              rw_ready_o;
-    logic                              rw_req_i;
-    logic [RW_DATA_WIDTH:0]            data_read_o;
-    logic [RW_DATA_WIDTH:0]            data_write_i;
-    logic [AXI_DATA_WIDTH:0]           rw_addr_i;
-    logic [1:0]                        rw_size_i;
-    logic [1:0]                        rw_resp_o;
-    wire rw_handshake = rw_valid_i && rw_ready_o;
-    //arbitrate m1 > m0
-    localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
-    logic grant;
-
-    always @(posedge clock) begin
-        if(!reset_n)
-            grant <= MASTER_0;
-        else if(m1_rw_valid_i && m1_rw_ready_o)
-            grant <= MASTER_0; 
-        else if(m0_rw_valid_i && m0_rw_ready_o && m1_rw_valid_i )
-            grant <= MASTER_1;
-    end
-
-    always @(*) begin
-        rw_valid_i = 1'b0;
-        rw_req_i = 1'b0;
-        data_write_i = 'b0;
-        rw_addr_i = 'b0;
-        rw_size_i = 'b0;
-    //priority m1 > m0
-        if(m1_rw_valid_i == 1'b1) begin
-            rw_valid_i = m1_rw_valid_i;
-            rw_req_i = m1_rw_req_i;
-            data_write_i = m1_data_write_i;
-            rw_addr_i = m1_rw_addr_i;
-            rw_size_i = m1_rw_size_i;
-        end
-        else if(m0_rw_valid_i) begin
-            rw_valid_i = m0_rw_valid_i;
-            rw_req_i = m0_rw_req_i;
-            rw_addr_i = m0_rw_addr_i;
-            rw_size_i = m0_rw_size_i;
-        end
-    end
-
-    assign m1_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? rw_ready_o : 1'b0;          
-    assign m0_rw_ready_o    = (m1_rw_valid_i && grant == MASTER_1)? 1'b0 : rw_ready_o;
-    assign m1_data_read_o   = m1_rw_valid_i? data_read_o : 'b0;
-    assign m0_data_read_o   = m1_rw_valid_i? 'b0 : data_read_o;
-    assign m1_rw_resp_o     = m1_rw_valid_i? rw_resp_o : 'b0;
-    assign m0_rw_resp_o     = m1_rw_valid_i? 'b0 : rw_resp_o;    
-
-    /*assign rw_valid_i       = m0_rw_valid_i;
-    assign m0_rw_ready_o    =   rw_ready_o;
-    assign rw_req_i         = m0_rw_req_i;
-    assign m0_data_read_o   = data_read_o;
-    //assign m0_data_write_i  =
-    assign rw_addr_i        = m0_rw_addr_i;
-    assign rw_size_i        = m0_rw_size_i;
-    assign m0_rw_resp_o     =   rw_resp_o;*/
-//------------------------------------------------------------------------------
 //  (original) 
 //------------------------------------------------------------------------------
     wire w_trans    = rw_req_i == `REQ_WRITE;
@@ -219,7 +157,7 @@ module axi_rw # (
     wire r_hs       = axi_r_ready_o  & axi_r_valid_i;
 
     wire w_done     = w_hs & axi_w_last_o;
-    wire r_done     = (r_hs & axi_r_last_i);
+    wire r_done     = r_hs & axi_r_last_i;
     wire trans_done = w_trans ? b_hs : r_done;
 
     
@@ -267,13 +205,16 @@ module axi_rw # (
 
     // ------------------Number of transmission------------------
     reg [7:0] len;
-    wire len_reset      = !reset_n | (w_trans & w_state_idle) | (r_trans & r_state_idle);
-    wire len_incr_en    = (len != axi_len) & (w_hs | r_hs);//axi_len = total write/read len
+    //wire len_reset      = !reset_n | (w_trans & w_state_idle) | (r_trans & r_state_idle);
+    //wire len_incr_en    = (len != axi_len) & (w_hs | r_hs);//axi_len = total write/read len
     always @(posedge clock) begin
-        if (len_reset) begin
+        if (!reset_n) begin
             len <= 0;
         end
-        else if (len_incr_en) begin
+        else if((w_trans & w_state_idle) | (r_trans & r_state_idle))begin
+            len <= 0;
+        end
+        else if ((len != axi_len) & (w_hs | r_hs)) begin
             len <= len + 1;
         end
     end
@@ -292,10 +233,10 @@ module axi_rw # (
     wire size_w             = rw_size_i == `SIZE_W;//10
     wire size_d             = rw_size_i == `SIZE_D;//11
     wire [3:0] addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, rw_addr_i[ALIGNED_WIDTH-1:0]};
-    wire [3:0] addr_op2     = ({4{size_b}} & {4'b0})
-                                | ({4{size_h}} & {4'b1})
-                                | ({4{size_w}} & {4'b11})
-                                | ({4{size_d}} & {4'b111})
+    wire [3:0] addr_op2     = ({4{size_b}} & {4'b0000})
+                                | ({4{size_h}} & {4'b0001})
+                                | ({4{size_w}} & {4'b0011})
+                                | ({4{size_d}} & {4'b0111})
                                 ;
     wire [3:0] addr_end     = addr_op1 + addr_op2;
     wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;
@@ -317,18 +258,17 @@ module axi_rw # (
     wire [AXI_ID_WIDTH-1:0] axi_id              = {AXI_ID_WIDTH{1'b0}};
     wire [AXI_USER_WIDTH-1:0] axi_user          = {AXI_USER_WIDTH{1'b0}};
 
-    reg rw_ready;
-    wire rw_ready_nxt = trans_done;
-    wire rw_ready_en      = trans_done | rw_ready;
+    //reg rw_ready;
+    //wire rw_ready_nxt = trans_done;
+    //wire rw_ready_en      = trans_done | rw_ready;
     always @(posedge clock) begin
         if (!reset_n) begin
-            rw_ready <= 0;
+            rw_ready_o <= 0;
         end
-        else if (rw_ready_en) begin
-            rw_ready <= rw_ready_nxt;
+        else if (trans_done | rw_ready_o) begin
+            rw_ready_o <= trans_done;
         end
     end
-    assign rw_ready_o   = rw_ready;
 
     reg [1:0] rw_resp;
     wire rw_resp_nxt = w_trans ? axi_b_resp_i : axi_r_resp_i;
