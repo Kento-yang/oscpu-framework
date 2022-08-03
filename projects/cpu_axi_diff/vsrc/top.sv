@@ -347,7 +347,7 @@ reg [`REG_BUS] regs_diff_npc [0 : 31];
 wire inst_valid; //= fetched;
 
 //commit need 
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched /*&& mem_lsu_valid*/;
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
 
 
 //initial begin

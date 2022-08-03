@@ -86,15 +86,15 @@ ex_mem u_ex_mem(
     logic mem_ldst_en;
     assign handshake_done = mem_valid_o & mem_ready_i;
 
-    /*always @(*) begin
+    always @(*) begin
       if(!rst_n)
           lsu_valid = 1'b0;
       else if(!handshake_done && mem_lsu_opt != `LSU_NOP && mem_lsu_opt != 'h0)
           lsu_valid = 1'b0;
       else
           lsu_valid = 1'b1;
-    end*/
-    assign lsu_valid = mem_ldst_en? mem_ready_i : valid_ex2mem;
+    end
+    //assign lsu_valid = mem_ldst_en? mem_ready_i : valid_ex2mem;
 
     assign mem_ldst_en   = mem_lsu_lden | mem_lsu_sten;
     assign mem_valid_o   =  mem_ldst_en; //ld or st occupy the axi
