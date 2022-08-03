@@ -137,16 +137,16 @@ module SimTop(
     axi_rw u_axi_rw (
         .clock                          (clock),
         .reset_n                         (~reset),
-/*
-        .rw_valid_i                     (if_valid),
-        .rw_ready_o                     (if_ready),
-        .rw_req_i                       (if_req),
-        .data_read_o                    (if_data_read),
-        .data_write_i                   (),
-        .rw_addr_i                      (if_addr),
-        .rw_size_i                      (if_size),
-        .rw_resp_o                      (if_resp),*/
-//IF
+
+        .rw_valid_i                     (rw_valid_i),
+        .rw_ready_o                     (rw_ready_o),
+        .rw_req_i                       (rw_req_i),
+        .data_read_o                    (data_read_o),
+        .data_write_i                   (data_write_i),
+        .rw_addr_i                      (rw_addr_i),
+        .rw_size_i                      (rw_size_i),
+        .rw_resp_o                      (rw_resp_o),
+/*//IF    
         .m0_rw_valid_i                  (if_valid),
         .m0_rw_ready_o                  (if_ready),
         .m0_rw_req_i                    (if_req),
@@ -163,7 +163,7 @@ module SimTop(
         .m1_data_write_i                (mem_data_write),
         .m1_rw_addr_i                   (mem_addr),
         .m1_rw_size_i                   (mem_size),
-        .m1_rw_resp_o                   (mem_resp),
+        .m1_rw_resp_o                   (mem_resp),*/
         .m1_write_mask_i                (mem_wmask),//for write' 
 
         .axi_aw_ready_i                 (aw_ready),
@@ -215,9 +215,16 @@ module SimTop(
         .axi_r_id_i                     (r_id),
         .axi_r_user_i                   (r_user)
     );
-
-
+    
     //connect AXI_RW and CPU
+    logic                  rw_valid_i;   
+    logic              rw_ready_o  ;
+    logic              rw_req_i   ;  
+    logic [  63:0]         data_read_o;  
+    logic [  63:0]         data_write_i; 
+    logic [  63:0]         rw_addr_i;    
+    logic [   1:0]         rw_size_i;    
+    logic [   1:0]         rw_resp_o;    
     wire if_valid;
     wire if_ready;
     wire if_req = `REQ_READ;
@@ -236,6 +243,39 @@ module SimTop(
     wire [1:0] mem_resp;
 
     wire [7:0] mem_wmask;
+   
+if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
+    .clk             ( clock             ),
+    .reset_n         ( ~reset         ),
+
+    .if_valid        ( if_valid        ),
+    .if_ready        ( if_ready        ),
+    .if_req          ( if_req          ),
+    .if_data_read    ( if_data_read    ),
+    .if_addr         ( if_addr         ),
+    .if_size         ( if_size         ),
+    .if_resp         ( if_resp         ),
+
+    .mem_valid       ( mem_valid       ),
+    .mem_ready       ( mem_ready       ),
+    .mem_req         ( mem_req         ),
+    .mem_data_read   ( mem_data_read   ),
+    .mem_data_write  ( mem_data_write  ),
+    .mem_addr        ( mem_addr        ),
+    .mem_size        ( mem_size        ),
+    .mem_resp        ( mem_resp        ),
+    .mem_wmask       ( mem_wmask       ),
+
+    .rw_valid_i      ( rw_valid_i      ),
+    .rw_ready_o      ( rw_ready_o      ),
+    .rw_req_i        ( rw_req_i        ),
+    .data_read_o     ( data_read_o     ),
+    .data_write_i    ( data_write_i    ),
+    .rw_addr_i       ( rw_addr_i       ),
+    .rw_size_i       ( rw_size_i       ),
+    .rw_resp_o       ( rw_resp_o       )
+);
+
     top u_cpu(
         .clk                            (clock),
         .reset_n                        (~reset),

@@ -58,7 +58,7 @@ module axi_rw # (
 )(
     input                               clock,
     input                               reset_n,
-/* original signal
+// original signal
 	input                               rw_valid_i,
 	output                              rw_ready_o,
     input                               rw_req_i,
@@ -66,11 +66,11 @@ module axi_rw # (
     input  [RW_DATA_WIDTH:0]            data_write_i,
     input  [AXI_DATA_WIDTH:0]           rw_addr_i,
     input  [1:0]                        rw_size_i,
-    output [1:0]                        rw_resp_o,*/
+    output [1:0]                        rw_resp_o,
 
 //for arbitration
 //IF interface (read only)
-    input                                  m0_rw_valid_i,
+/*    input                                  m0_rw_valid_i,
     output                                 m0_rw_ready_o,
     input                                  m0_rw_req_i,
     output reg [RW_DATA_WIDTH-1:0]             m0_data_read_o,
@@ -87,7 +87,7 @@ module axi_rw # (
     input  [RW_DATA_WIDTH-1:0]              m1_data_write_i,
     input  [AXI_DATA_WIDTH-1:0]             m1_rw_addr_i,
     input  [1:0]                            m1_rw_size_i,
-    output [1:0]                            m1_rw_resp_o,
+    output [1:0]                            m1_rw_resp_o,*/
 
     input  [7:0]                            m1_write_mask_i,//for write
 
@@ -144,7 +144,7 @@ module axi_rw # (
 //------------------------------------------------------------------------------
 //  Arbitration 
 //------------------------------------------------------------------------------
-    logic                              rw_valid_i;
+/*   logic                              rw_valid_i;
 	logic                              rw_ready_o;
     logic                              rw_req_i;
     logic [RW_DATA_WIDTH:0]            data_read_o;
