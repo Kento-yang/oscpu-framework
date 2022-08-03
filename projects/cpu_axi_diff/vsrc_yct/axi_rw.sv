@@ -351,7 +351,7 @@ module axi_rw # (
     assign axi_aw_valid_o   = w_state_addr & w_valid;
     assign axi_aw_addr_o    = axi_addr;
     assign axi_aw_len_o     = axi_len;
-    assign axi_aw_size_o    = 3'b010;//{1'b0,rw_size_i};
+    assign axi_aw_size_o    = axi_size;//{1'b0,rw_size_i};
     assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;//突发类型：递增类型
     assign axi_aw_id_o      = axi_id;
     assign axi_aw_user_o    = axi_user;
