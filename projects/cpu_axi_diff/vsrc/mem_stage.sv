@@ -127,28 +127,28 @@ ex_mem u_ex_mem(
 //WRITE TO AXI_RW
     assign mem_data_write_o = mem_reg2_rdata;
     assign mem_write_mask_o = wmask; 
-    //assign mem_rw_size_o = axi_size;//axi wirte size
+
 
 //------------------------------------------------------------------------------
 //  4.MEM  
 //------------------------------------------------------------------------------
     logic   [`DATA_WIDTH-1:0]           rdata;
     logic   [`AXI_DATA_WIDTH/8-1:0]     wmask;
-    logic   [1:0]                       axi_size;
+
 
   wire [`DATA_WIDTH-1:0] raddr = mem_alu_res;
   
   //=============load=========
   always @(*) begin
     case (mem_lsu_opt)//rdata->load data
-      `LSU_LB:  begin mem_regld = {{56{rdata[ 7]}}, rdata[ 7:0]}; axi_size = `SIZE_B;end
-      `LSU_LH:  begin mem_regld = {{48{rdata[15]}}, rdata[15:0]}; axi_size = `SIZE_H;end 
-      `LSU_LW:  begin mem_regld = {{32{rdata[31]}}, rdata[31:0]}; axi_size = `SIZE_W;end 
-      `LSU_LD:  begin mem_regld = rdata;                          axi_size = `SIZE_D;end
-      `LSU_LBU: begin mem_regld = {56'b0, rdata[ 7:0]};           axi_size = `SIZE_B;end
-      `LSU_LHU: begin mem_regld = {48'b0, rdata[15:0]};           axi_size = `SIZE_H;end
-      `LSU_LWU: begin mem_regld = {32'b0, rdata[31:0]};           axi_size = `SIZE_W;end
-      default:  begin mem_regld = `DATA_WIDTH'b0;                 axi_size = `SIZE_B;end
+      `LSU_LB:  begin mem_regld = {{56{rdata[ 7]}}, rdata[ 7:0]}; end
+      `LSU_LH:  begin mem_regld = {{48{rdata[15]}}, rdata[15:0]}; end 
+      `LSU_LW:  begin mem_regld = {{32{rdata[31]}}, rdata[31:0]}; end 
+      `LSU_LD:  begin mem_regld = rdata;                          end
+      `LSU_LBU: begin mem_regld = {56'b0, rdata[ 7:0]};           end
+      `LSU_LHU: begin mem_regld = {48'b0, rdata[15:0]};           end
+      `LSU_LWU: begin mem_regld = {32'b0, rdata[31:0]};           end
+      default:  begin mem_regld = `DATA_WIDTH'b0;                 end
     endcase
   end
 

@@ -5,6 +5,7 @@
 module top (
     input                               clk                        ,
     input                               rst_n                    ,
+    input grant,
 //IF INTTERFACE
     output                              if_valid                   ,
     input                               if_ready                   ,
@@ -138,11 +139,16 @@ id_stage u_id_stage(
     .ex_reg2_raddr                     (ex_reg2_raddr             ),
     .ex_reg_waddr                      (ex_reg_waddr              ),
     .ex_reg_wen                        (ex_reg_wen                ),
+    .ex_diff_pc(ex_diff_pc),
     .ex_lsu_opt                        (ex_lsu_opt                ),
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_alu_res                       (mem_alu_res               ),
+    .mem_valid(mem_valid),
+    .mem_ready(mem_ready),
+    .mem_req(mem_rw_req),
+    .mem_grant(grant),
     .ex_alu_res                        (ex_alu_res                ),
     .mem_regld                         (mem_regld                 ),
 
