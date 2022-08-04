@@ -334,11 +334,11 @@ reg [63:0] cycleCnt;
 reg [63:0] instrCnt;
 reg [`REG_BUS] regs_diff_npc [0 : 31];
 
-wire inst_valid; //= fetched;
+wire inst_exec_finish_valid; //= fetched;
 
 //commit need 
-//assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next;
+//assign inst_exec_finish_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
+assign inst_exec_finish_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next;
 
 //initial begin
 //    $monitor("cmt_wdest is %h",cmt_wdest);
@@ -365,14 +365,14 @@ always @(negedge clk) begin
     cmt_wdata <= wb_reg_wdata;//rd_data;
     cmt_pc <= wb_diff_pc;//pc;
     cmt_inst <= wb_inst;//inst;
-    cmt_valid <= inst_valid;//inst_valid;
+    cmt_valid <= inst_exec_finish_valid;//inst_exec_finish_valid;
 
     regs_diff_npc <= regs;
 
     trap <= wb_inst[6:0] == 7'h6b;
     trap_code <= regs[10][7:0];
     cycleCnt <= cycleCnt + 1;
-    instrCnt <= instrCnt + inst_valid;
+    instrCnt <= instrCnt + inst_exec_finish_valid;
   end
 end
 

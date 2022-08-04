@@ -21,8 +21,8 @@ module top_axirw(
   // w:
   input  logic                      i_axi_w_ready   ,                
   output logic                      o_axi_w_valid   ,
-  output logic [`DATA_WIDTH-1:0]     o_axi_w_data    ,
-  output logic [`DATA_WIDTH/8-1:0]   o_axi_w_strb    ,
+  output logic [`DATA_WIDTH-1:0]     o_axi_w_data   ,
+  output logic [`DATA_WIDTH/8-1:0]   o_axi_w_strb   ,
   output logic                      o_axi_w_last    ,
   output logic                      o_axi_w_user    ,
   // b:
