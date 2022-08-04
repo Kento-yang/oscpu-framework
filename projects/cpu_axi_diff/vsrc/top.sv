@@ -4,7 +4,7 @@
 
 module top (
     input                               clk                        ,
-    input                               reset_n                    ,
+    input                               rst_n                    ,
 //IF INTTERFACE
     output                              if_valid                   ,
     input                               if_ready                   ,
@@ -37,17 +37,6 @@ module top (
                                 ex_inst     , 
                                 mem_inst    , 
                                 wb_inst     ;
-//------------------------------------------------------------------------------
-// Reset_tree.
-//------------------------------------------------------------------------------
-    logic                       rst_n;
-
-sync_reset_async_release u_reset_tree(
-    .clock                             (clk                       ),
-    .reset_n                           (reset_n                   ),
-    
-    .rst_n                             (rst_n                     ) 
-);
 //------------------------------------------------------------------------------
 //  1.IF STAGE
 //------------------------------------------------------------------------------

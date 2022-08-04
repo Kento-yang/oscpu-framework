@@ -60,86 +60,17 @@ module axi_rw # (
     input                               reset_n,
 // original signal
 	input                               rw_valid_i,
-	output logic                             rw_ready_o,
+	output logic                        rw_ready_o,
     input                               rw_req_i,
-    output reg [RW_DATA_WIDTH:0]        data_read_o,
+    output logic [RW_DATA_WIDTH:0]        data_read_o,
     input  [RW_DATA_WIDTH:0]            data_write_i,
     input  [AXI_DATA_WIDTH:0]           rw_addr_i,
     input  [1:0]                        rw_size_i,
-    output [1:0]                        rw_resp_o,
+    output logic [1:0]                  rw_resp_o,
     input  [7:0]                        rw_wmask_i,
-//for arbitration
-//IF interface (read only)
-/*    input                                  m0_rw_valid_i,
-    output                                 m0_rw_ready_o,
-    input                                  m0_rw_req_i,
-    output reg [RW_DATA_WIDTH-1:0]             m0_data_read_o,
-    //input  [RW_DATA_WIDTH:0]               m0_data_write_i,
-    input  [AXI_DATA_WIDTH-1:0]            m0_rw_addr_i,
-    input  [1:0]                           m0_rw_size_i,
-    output [1:0]                           m0_rw_resp_o,
-
-//MEM interface r/w
-    input                                   m1_rw_valid_i,
-    output                                  m1_rw_ready_o,
-    input                                   m1_rw_req_i,//1：write to mem 0：read from mem
-    output [RW_DATA_WIDTH-1:0]              m1_data_read_o,
-    input  [RW_DATA_WIDTH-1:0]              m1_data_write_i,
-    input  [AXI_DATA_WIDTH-1:0]             m1_rw_addr_i,
-    input  [1:0]                            m1_rw_size_i,
-    output [1:0]                            m1_rw_resp_o,
-
-    input  [7:0]                            m1_write_mask_i,//for write*/
 
     // Advanced eXtensible Interface
-    input                               axi_aw_ready_i,
-    output                              axi_aw_valid_o,
-    output [AXI_ADDR_WIDTH-1:0]         axi_aw_addr_o,
-    output [2:0]                        axi_aw_prot_o,
-    output [AXI_ID_WIDTH-1:0]           axi_aw_id_o,
-    output [AXI_USER_WIDTH-1:0]         axi_aw_user_o,
-    output [7:0]                        axi_aw_len_o,
-    output [2:0]                        axi_aw_size_o,
-    output [1:0]                        axi_aw_burst_o,
-    output                              axi_aw_lock_o,
-    output [3:0]                        axi_aw_cache_o,
-    output [3:0]                        axi_aw_qos_o,//AXI4 only
-    output [3:0]                        axi_aw_region_o,//AXI4 only
-
-    input                               axi_w_ready_i,
-    output                              axi_w_valid_o,
-    output [AXI_DATA_WIDTH-1:0]         axi_w_data_o,
-    output [AXI_DATA_WIDTH/8-1:0]       axi_w_strb_o,
-    output                              axi_w_last_o,
-    output [AXI_USER_WIDTH-1:0]         axi_w_user_o,
-    
-    output                              axi_b_ready_o,
-    input                               axi_b_valid_i,
-    input  [1:0]                        axi_b_resp_i,
-    input  [AXI_ID_WIDTH-1:0]           axi_b_id_i,
-    input  [AXI_USER_WIDTH-1:0]         axi_b_user_i,
-
-    input                               axi_ar_ready_i,
-    output                              axi_ar_valid_o,
-    output [AXI_ADDR_WIDTH-1:0]         axi_ar_addr_o,
-    output [2:0]                        axi_ar_prot_o,
-    output [AXI_ID_WIDTH-1:0]           axi_ar_id_o,
-    output [AXI_USER_WIDTH-1:0]         axi_ar_user_o,
-    output [7:0]                        axi_ar_len_o,
-    output [2:0]                        axi_ar_size_o,
-    output [1:0]                        axi_ar_burst_o,
-    output                              axi_ar_lock_o,
-    output [3:0]                        axi_ar_cache_o,
-    output [3:0]                        axi_ar_qos_o,
-    output [3:0]                        axi_ar_region_o,
-    
-    output                              axi_r_ready_o,
-    input                               axi_r_valid_i,
-    input  [1:0]                        axi_r_resp_i,
-    input  [AXI_DATA_WIDTH-1:0]         axi_r_data_i,
-    input                               axi_r_last_i,
-    input  [AXI_ID_WIDTH-1:0]           axi_r_id_i,
-    input  [AXI_USER_WIDTH-1:0]         axi_r_user_i
+    axi4_if.Master                      Axi4_M
 );
 //------------------------------------------------------------------------------
 //  (original) 
@@ -150,14 +81,14 @@ module axi_rw # (
     wire r_valid    = rw_valid_i & r_trans;
 
     // handshake
-    wire aw_hs      = axi_aw_ready_i & axi_aw_valid_o;
-    wire w_hs       = axi_w_ready_i  & axi_w_valid_o;
-    wire b_hs       = axi_b_ready_o  & axi_b_valid_i;
-    wire ar_hs      = axi_ar_ready_i & axi_ar_valid_o;
-    wire r_hs       = axi_r_ready_o  & axi_r_valid_i;
+    wire aw_hs      = Axi4_M.aw_valid & Axi4_M.aw_ready;
+    wire w_hs       = Axi4_M.w_valid  & Axi4_M.w_ready ;
+    wire b_hs       = Axi4_M.b_valid  & Axi4_M.b_ready ;
+    wire ar_hs      = Axi4_M.ar_valid & Axi4_M.ar_ready;
+    wire r_hs       = Axi4_M.r_valid  & Axi4_M.r_ready ;
 
-    wire w_done     = w_hs & axi_w_last_o;
-    wire r_done     = r_hs & axi_r_last_i;
+    wire w_done     = w_hs & Axi4_M.w_last;
+    wire r_done     = r_hs & Axi4_M.r_last;
     wire trans_done = w_trans ? b_hs : r_done;
 
     
@@ -270,41 +201,37 @@ module axi_rw # (
         end
     end
 
-    reg [1:0] rw_resp;
-    wire rw_resp_nxt = w_trans ? axi_b_resp_i : axi_r_resp_i;
-    wire resp_en = trans_done;
     always @(posedge clock) begin
         if (!reset_n) begin
-            rw_resp <= 0;
+            rw_resp_o <= 0;
         end
-        else if (resp_en) begin
-            rw_resp <= rw_resp_nxt;
+        else if (trans_done) begin
+            rw_resp_o <= w_trans ? Axi4_M.b_resp : Axi4_M.r_resp;
         end
     end
-    assign rw_resp_o      = rw_resp;
 
 //------------------------------------------------------------------------------
 //  W/R Transactions 
 //------------------------------------------------------------------------------
     // ------------------Write Transaction------------------
-    //Write address channel signals
-    assign axi_aw_valid_o   = w_state_addr & w_valid;
-    assign axi_aw_addr_o    = axi_addr;
-    assign axi_aw_len_o     = axi_len;
-    assign axi_aw_size_o    = axi_size;//{1'b0,rw_size_i};
-    assign axi_aw_burst_o   = `AXI_BURST_TYPE_INCR;//突发类型：递增类型
-    assign axi_aw_id_o      = axi_id;
-    assign axi_aw_user_o    = axi_user;
-    assign axi_aw_prot_o    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
-    assign axi_aw_cache_o   = `AXI_AWCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE;
-    assign axi_aw_lock_o    =  1'b0;
-    assign axi_aw_qos_o     =  4'h0;
-    assign axi_aw_region_o  =  4'h0;
+    // write addr channel:
+    assign Axi4_M.aw_valid   = w_state_addr & w_valid;
+    assign Axi4_M.aw_addr    = axi_addr;
+    assign Axi4_M.aw_len     = axi_len;
+    assign Axi4_M.aw_size    = axi_size;
+    assign Axi4_M.aw_burst   = `AXI_BURST_TYPE_INCR;
+    assign Axi4_M.aw_id      = axi_id;                                                                           // no use.
+    assign Axi4_M.aw_user    = axi_user;                                                                         // no use.
+    assign Axi4_M.aw_prot    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;  // no use.
+    assign Axi4_M.aw_cache   = `AXI_AWCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE;                                  // no use.
+    assign Axi4_M.aw_lock    = 1'b0;                                                                             // no use.
+    assign Axi4_M.aw_qos     = 4'h0;                                                                             // no use.
+    assign Axi4_M.aw_region  = 4'h0;                                                                             // no use.
 
     //Write data channel signals
-    assign axi_w_valid_o  = w_state_write;
-    assign axi_w_last_o   = w_hs & (len == axi_len);
-    assign axi_w_user_o   = axi_user;
+    assign Axi4_M.w_valid    = w_state_write;
+    assign Axi4_M.w_last     = w_hs & (len == axi_len);
+    assign Axi4_M.w_user     = axi_user;                                                                         // no use.
     wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = ( data_write_i << aligned_offset_l) & mask_l ;
     wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = ( data_write_i >> aligned_offset_h) & mask_h;
     wire [AXI_DATA_WIDTH/8-1:0] axi_w_strb_l;
@@ -316,32 +243,32 @@ module axi_rw # (
     end
 
 
-    assign axi_w_data_o   = data_write_i;        //assume: YSYX210366_AXI_DATA_WIDTH = YSYX210366_RW_DATA_WIDTH
-    assign axi_w_strb_o   = rw_wmask_i;
-
+    assign Axi4_M.w_data  = Axi4_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_data_h : axi_w_data_l): {AXI_DATA_WIDTH{1'b0}};    
+    assign Axi4_M.w_strb  = Axi4_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_strb_h : axi_w_strb_l): {AXI_DATA_WIDTH/8{1'b0}};
 
     //Write response channel signals
-    assign axi_b_ready_o = w_state_resp;
+    assign Axi4_M.b_ready    = w_state_resp;
 
     // ------------------Read Transaction------------------
     // Read address channel signals
-    assign axi_ar_valid_o   = r_state_addr & r_valid;
-    assign axi_ar_addr_o    = axi_addr;
-    assign axi_ar_prot_o    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
-    assign axi_ar_id_o      = axi_id;
-    assign axi_ar_user_o    = axi_user;
-    assign axi_ar_len_o     = axi_len;
-    assign axi_ar_size_o    = axi_size;
-    assign axi_ar_burst_o   = `AXI_BURST_TYPE_INCR;
-    assign axi_ar_lock_o    = 1'b0;
-    assign axi_ar_cache_o   = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-    assign axi_ar_qos_o     = 4'h0;
+    assign Axi4_M.ar_valid   = r_state_addr & r_valid;
+    assign Axi4_M.ar_addr    = axi_addr;
+    assign Axi4_M.ar_prot    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
+    assign Axi4_M.ar_id      = axi_id;
+    assign Axi4_M.ar_user    = axi_user;
+    assign Axi4_M.ar_len     = axi_len;
+    assign Axi4_M.ar_size    = axi_size;
+    assign Axi4_M.ar_burst   = `AXI_BURST_TYPE_INCR;
+    assign Axi4_M.ar_lock    = 1'b0;
+    assign Axi4_M.ar_cache   = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
+    assign Axi4_M.ar_qos     = 4'h0;
+
 
     // Read data channel signals
-    assign axi_r_ready_o    = r_state_read;
+    assign Axi4_M.r_ready    = r_state_read;
 
-    wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (axi_r_data_i & mask_l) >> aligned_offset_l;
-    wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (axi_r_data_i & mask_h) << aligned_offset_h;
+    wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (Axi4_M.r_data & mask_l) >> aligned_offset_l;
+    wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (Axi4_M.r_data & mask_h) << aligned_offset_h;
 
     generate
         for (genvar i = 0; i < TRANS_LEN; i += 1) begin
@@ -349,7 +276,7 @@ module axi_rw # (
                 if (!reset_n) begin
                     data_read_o[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
                 end
-                else if (axi_r_ready_o & axi_r_valid_i) begin
+                else if (Axi4_M.r_valid & Axi4_M.r_ready) begin
                     if (~aligned & overstep) begin
                         if (len[0]) begin//second read
                             data_read_o[AXI_DATA_WIDTH-1:0] <= data_read_o[AXI_DATA_WIDTH-1:0] | axi_r_data_h;
