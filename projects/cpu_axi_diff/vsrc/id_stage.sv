@@ -23,10 +23,10 @@ module id_stage(
     input logic                                mem_reg_wen,
     input logic    [`LSU_OPT_WIDTH-1 : 0]      mem_lsu_opt,
     input logic    [`DATA_WIDTH-1:0]           mem_alu_res,
-    input logic mem_valid,
-    input logic mem_ready,
-    input logic mem_req,
-    input logic mem_grant,
+    input logic                                mem_valid,
+    input logic                                mem_ready,
+    input logic                                mem_req,
+    input logic                                mem_grant,
 //from alu
     input logic    [`DATA_WIDTH-1:0]           ex_alu_res,
 //from mem lsu
@@ -53,8 +53,8 @@ module id_stage(
     output            [`ALU_OP_WIDTH-1 : 0]      id_alu_op,
     output            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel,
     output            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt,
-    output logic id_lsu_lden,
-    output logic id_lsu_sten,
+    output logic                                 id_lsu_lden,
+    output logic                                 id_lsu_sten,
     output           [`PC_WIDTH-1:0]             id_diff_pc,    
 
 //to the top DPIC detect good/bad trap
@@ -181,6 +181,7 @@ data_bypass u1_data_bypass(
 
     .sten_ex                           (ex_lsu_opt                ),//ex阶段st指令
     .sten_mem                          (mem_lsu_opt               ),//mem阶段st指令
+    .lden_id                           (id_lsu_lden),
     .lden_ex                           (~ex_lsu_opt[0]            ),
     .lden_mem                          (~mem_lsu_opt[0]           ),//mem阶段ld指令
     
