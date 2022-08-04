@@ -224,7 +224,7 @@ mux_bypass#(
 logic valid_id2ex_r;
 //当LD-ADD冒险发生时，如果mem成功读到数据，并且需要旁路的时候，valid可以为高
 //需要旁路通过bubble_id_ex判断，bubble_id_ex虽然只有一个cycle脉冲，但是会让ex的diff_pc一直为1，用此信号告知发生了LD-ADD型冒险。
-assign valid_id2ex = valid_id2ex_r || (mem_valid && mem_ready && (mem_grant == 1) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
+assign valid_id2ex = valid_id2ex_r; //|| (mem_valid && mem_ready && (mem_grant == 1) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
 pipehandshake u1_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
