@@ -91,8 +91,8 @@ id_ex u_id_ex(
     .id_alu_op                         (id_alu_op                 ),
     .id_alu_src_sel                    (id_alu_src_sel            ),
     .id_lsu_opt                        (id_lsu_opt                ),
-    .id_lsu_lden(id_lsu_lden),
-    .id_lsu_sten(id_lsu_sten),
+    .id_lsu_lden                       (id_lsu_lden               ),
+    .id_lsu_sten                       (id_lsu_sten               ),
     .id_diff_pc                        (id_diff_pc                ),
 
     .ex_inst                           (ex_inst                   ),
@@ -110,8 +110,8 @@ id_ex u_id_ex(
     .ex_alu_op                         (ex_alu_op                 ),
     .ex_alu_src_sel                    (ex_alu_src_sel            ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
-    .ex_lsu_lden(ex_lsu_lden),
-    .ex_lsu_sten(ex_lsu_sten),
+    .ex_lsu_lden                       (ex_lsu_lden               ),
+    .ex_lsu_sten                       (ex_lsu_sten               ),
     .ex_diff_pc                        (ex_diff_pc                ) 
 );
 //------------------------------------------------------------------------------
