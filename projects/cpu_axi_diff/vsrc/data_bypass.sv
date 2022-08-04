@@ -45,6 +45,7 @@ module data_bypass(
     //在总线中，这块会有问题，Lbu a0，a0由于总线执行一次指令较长，会产生假bubble
     //解决办法：让lden_ex改为lden_ex && lden_id 不解决LD-LD类型冒险。
     //
+    //
     assign bubble_id_ex = lden_ex && !lden_id && reg_wen_ex && (reg_waddr_ex != 5'd0) && ( (reg_waddr_ex == reg1_raddr_id ) || (reg_waddr_ex == reg2_raddr_id));//需停顿一拍
 
     //ld-st mem2ex
