@@ -293,6 +293,7 @@ mem_stage u_mem_stage(
 //------------------------------------------------------------------------------
 //  5.WB STAGE
 //------------------------------------------------------------------------------
+    logic wbu_valid_o_next;
 wb_stage u_wb_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
@@ -312,7 +313,7 @@ wb_stage u_wb_stage(
 
     .valid_mem2wb                       (valid_mem2wb               ),
     .ready_next_i                      ( 1             ),
-    .valid_o_next                      (               ),
+    .valid_o_next                       ( wbu_valid_o_next              ),
     .ready_wb2mem                       (ready_wb2mem               ) 
 );
 
@@ -336,8 +337,8 @@ reg [`REG_BUS] regs_diff_npc [0 : 31];
 wire inst_valid; //= fetched;
 
 //commit need 
-assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
-
+//assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && fetched && mem_lsu_valid;
+assign inst_valid = (wb_diff_pc != `PC_WIDTH'b0) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next;
 
 //initial begin
 //    $monitor("cmt_wdest is %h",cmt_wdest);
