@@ -58,7 +58,7 @@ module ex_stage(
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen
+    logic                               pipe_wen;
     assign pipe_wen =  valid_id2ex && ready_ex2id;//shake success with id_stage
 
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
