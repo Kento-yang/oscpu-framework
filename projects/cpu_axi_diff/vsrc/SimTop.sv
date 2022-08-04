@@ -18,7 +18,7 @@ module SimTop(
 
   input                               `AXI_TOP_INTERFACE(aw_ready     ),
   output                              `AXI_TOP_INTERFACE(aw_valid     ),
-  output [`DATA_WIDTH-1:0]             `AXI_TOP_INTERFACE(aw_bits_addr ),
+  output [`DATA_WIDTH-1:0]            `AXI_TOP_INTERFACE(aw_bits_addr ),
   output [2:0]                        `AXI_TOP_INTERFACE(aw_bits_prot ),
   output [3:0]                        `AXI_TOP_INTERFACE(aw_bits_id   ),
   output                              `AXI_TOP_INTERFACE(aw_bits_user ),

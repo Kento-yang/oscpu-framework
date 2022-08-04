@@ -25,8 +25,8 @@ module ex_stage(
     input            [`ALU_OP_WIDTH-1 : 0]      id_alu_op,
     input            [`ALU_SRC_WIDTH-1 : 0]     id_alu_src_sel,
     input            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt,
-    input id_lsu_lden,
-    input id_lsu_sten,
+    input                                       id_lsu_lden,
+    input                                       id_lsu_sten,
     input           [`PC_WIDTH-1:0]             id_diff_pc,  
 
 
@@ -43,8 +43,8 @@ module ex_stage(
     output             [`DATA_WIDTH-1:0]         ex_alu_res    ,
     output             [`DATA_WIDTH-1:0]          ex_regst     ,//ex_reg2_rdata
     output             [`LSU_OPT_WIDTH-1 : 0]    ex_lsu_opt    ,
-    output logic ex_lsu_lden,
-    output logic ex_lsu_sten,
+    output logic                                 ex_lsu_lden,
+    output logic                                 ex_lsu_sten,
     output            [`PC_WIDTH-1:0]             ex_diff_pc,
     output logic                                ex_alu_res_valid,//div res valid signal.
 //handshake signal
@@ -58,7 +58,8 @@ module ex_stage(
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen =  valid_id2ex && ready_ex2id;//shake success with id_stage
+    logic                               pipe_wen;
+    assign pipe_wen =  valid_id2ex && ready_ex2id;//shake success with id_stage
 
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
     logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
@@ -90,8 +91,8 @@ id_ex u_id_ex(
     .id_alu_op                         (id_alu_op                 ),
     .id_alu_src_sel                    (id_alu_src_sel            ),
     .id_lsu_opt                        (id_lsu_opt                ),
-    .id_lsu_lden(id_lsu_lden),
-    .id_lsu_sten(id_lsu_sten),
+    .id_lsu_lden                       (id_lsu_lden               ),
+    .id_lsu_sten                       (id_lsu_sten               ),
     .id_diff_pc                        (id_diff_pc                ),
 
     .ex_inst                           (ex_inst                   ),
@@ -109,8 +110,8 @@ id_ex u_id_ex(
     .ex_alu_op                         (ex_alu_op                 ),
     .ex_alu_src_sel                    (ex_alu_src_sel            ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
-    .ex_lsu_lden(ex_lsu_lden),
-    .ex_lsu_sten(ex_lsu_sten),
+    .ex_lsu_lden                       (ex_lsu_lden               ),
+    .ex_lsu_sten                       (ex_lsu_sten               ),
     .ex_diff_pc                        (ex_diff_pc                ) 
 );
 //------------------------------------------------------------------------------

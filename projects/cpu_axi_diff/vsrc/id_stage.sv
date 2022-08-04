@@ -17,11 +17,16 @@ module id_stage(
     input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr,                 // register write address
     input logic                              ex_reg_wen,
     input logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
+    input logic            [`PC_WIDTH-1:0]      ex_diff_pc,//for ld-add adventure use
 //from ex_mem   
     input logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,              // register write address   
     input logic                                mem_reg_wen,
     input logic    [`LSU_OPT_WIDTH-1 : 0]      mem_lsu_opt,
     input logic    [`DATA_WIDTH-1:0]           mem_alu_res,
+    input logic mem_valid,
+    input logic mem_ready,
+    input logic mem_req,
+    input logic mem_grant,
 //from alu
     input logic    [`DATA_WIDTH-1:0]           ex_alu_res,
 //from mem lsu
@@ -216,6 +221,10 @@ mux_bypass#(
     .id_arb_rdata                      (id_arb_rdata2             ) 
 );
 
+logic valid_id2ex_r;
+//当LD-ADD冒险发生时，如果mem成功读到数据，并且需要旁路的时候，valid可以为高
+//需要旁路通过bubble_id_ex判断，bubble_id_ex虽然只有一个cycle脉冲，但是会让ex的diff_pc一直为1，用此信号告知发生了LD-ADD型冒险。
+assign valid_id2ex = valid_id2ex_r || (mem_valid && mem_ready && (mem_grant == 1) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
 pipehandshake u1_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
@@ -223,7 +232,7 @@ pipehandshake u1_pipehandshake(
     .valid_pre_i  ( valid_if2id  ),
     .ready_next_i ( ready_ex2id ),
 
-    .valid_o_next ( valid_id2ex ),
+    .valid_o_next ( valid_id2ex_r ),
     .ready_o_pre  ( ready_id2if  )
 );
 

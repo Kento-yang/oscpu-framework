@@ -1,4 +1,3 @@
-//
 `include "rvseed_defines.sv"
 `define AXI_TOP_INTERFACE(name) io_memAXI_0_``name
 
@@ -22,8 +21,8 @@ module top_axirw(
   // w:
   input  logic                      i_axi_w_ready   ,                
   output logic                      o_axi_w_valid   ,
-  output logic [`DATA_WIDTH-1:0]     o_axi_w_data    ,
-  output logic [`DATA_WIDTH/8-1:0]   o_axi_w_strb    ,
+  output logic [`DATA_WIDTH-1:0]     o_axi_w_data   ,
+  output logic [`DATA_WIDTH/8-1:0]   o_axi_w_strb   ,
   output logic                      o_axi_w_last    ,
   output logic                      o_axi_w_user    ,
   // b:
@@ -162,6 +161,7 @@ module top_axirw(
     logic [7:0] mem_wmask;
 
 // 2. Arbiter for IFU/MEM to axi_rw
+logic grant;
 if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .clk             ( clock             ),
     .reset_n         ( rst_n_sync         ),
@@ -184,6 +184,7 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .mem_resp        ( mem_resp        ),
     .mem_wmask       ( mem_wmask       ),
 
+    .grant(grant),
     .rw_valid_i      ( rw_valid_i      ),
     .rw_ready_o      ( rw_ready_o      ),
     .rw_req_i        ( rw_req_i        ),
@@ -198,6 +199,8 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     top u_cpu(
         .clk                            (clock),
         .rst_n                          (rst_n_sync),
+
+        .grant(grant),
 //IF
         .if_valid                       (if_valid),
         .if_ready                       (if_ready),
