@@ -24,6 +24,11 @@ module id_ex (
   input id_lsu_lden,
   input id_lsu_sten,
   input           [`PC_WIDTH-1:0]             id_diff_pc,    
+//CSR
+  input   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,
+  input                              id_csr_wen,
+  input   [`DATA_WIDTH - 1:0]        id_csr_rdata,
+  input   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
 
   output logic            [`INST_WIDTH-1:0]           ex_inst   ,
   output logic     [`PC_WIDTH-1:0]            ex_pc   ,
@@ -42,7 +47,13 @@ module id_ex (
   output logic     [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
   output logic ex_lsu_lden,
   output logic ex_lsu_sten,
-  output logic           [`PC_WIDTH-1:0]             ex_diff_pc
+  output logic           [`PC_WIDTH-1:0]             ex_diff_pc,
+//CSR  
+  output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
+  output logic                              ex_csr_wen,
+  output logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+  output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr
+
 );
   logic            [`INST_WIDTH-1:0]           tem_inst   ;
   logic     [`PC_WIDTH-1:0]            tem_pc;
@@ -61,7 +72,11 @@ module id_ex (
   logic     [`LSU_OPT_WIDTH-1 : 0]     tem_lsu_opt;
   logic tem_lsu_lden;
   logic tem_lsu_sten;
- logic           [`PC_WIDTH-1:0]             tem_diff_pc; 
+  logic           [`PC_WIDTH-1:0]             tem_diff_pc; 
+  logic tem_csr_raddr;
+  logic tem_csr_wen;
+  logic tem_csr_rdata;
+  logic tem_csr_waddr;
 
 
 //if ( bypass_bubble)=1 all=0 make a nop inst
@@ -85,6 +100,11 @@ module id_ex (
   assign tem_diff_pc = bpu_bubble ? `PC_WIDTH'h0 : //jump adventure
                        (bypass_bubble ? `PC_WIDTH'h1 : id_diff_pc);//data adventure
 
+  assign tem_csr_raddr =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_raddr;
+  assign tem_csr_wen   =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_wen;
+  assign tem_csr_rdata =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_rdata;
+  assign tem_csr_waddr =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_waddr;
+
 Reg #(
     .WIDTH      (`INST_WIDTH+2*`PC_WIDTH + 4 + 3*`REG_ADDR_WIDTH + 3*`DATA_WIDTH + 
                 `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH + 2),
@@ -95,10 +115,12 @@ Reg #(
     .wen      (pipe_wen                ),
     .din      ({tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
               tem_reg_wen, tem_reg_waddr, tem_reg1_raddr, tem_reg2_raddr, tem_reg1_rdata, tem_reg2_rdata, tem_imm,
-              tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,tem_diff_pc}),
+              tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,tem_diff_pc,
+              tem_csr_raddr,tem_csr_wen,tem_csr_rdata,tem_csr_waddr}),
     .dout     ({ex_inst, ex_pc, ex_branch, ex_jump,  ex_jalr,
               ex_reg_wen, ex_reg_waddr, ex_reg1_raddr, ex_reg2_raddr,  ex_reg1_rdata, ex_reg2_rdata, ex_imm,
-              ex_alu_op, ex_alu_src_sel, ex_lsu_opt,ex_lsu_lden,ex_lsu_sten,ex_diff_pc})
+              ex_alu_op, ex_alu_src_sel, ex_lsu_opt,ex_lsu_lden,ex_lsu_sten,ex_diff_pc,
+              ex_csr_raddr,ex_csr_wen,ex_csr_rdata,ex_csr_waddr})
   );
 
 

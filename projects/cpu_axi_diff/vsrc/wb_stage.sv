@@ -10,12 +10,22 @@ module wb_stage(
     input         [`DATA_WIDTH-1:0]           mem_alu_res    ,
     input         [`LSU_OPT_WIDTH-1:0]        mem_lsu_opt ,
     input             [`PC_WIDTH-1:0]             mem_diff_pc,
+//CSR
+    input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
+    input logic                              mem_csr_wen,
+    input logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
 
     output            [`DATA_WIDTH-1:0]          wb_reg_wdata,
     output     logic   [`PC_WIDTH-1:0]            wb_diff_pc  ,
     output     logic   [`INST_WIDTH-1:0]          wb_inst     ,
     output    logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr,                  // register write address
     output     logic                              wb_reg_wen,
+//CSR
+    output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_raddr,
+    output logic                              wb_csr_wen,
+    output logic   [`DATA_WIDTH - 1:0]        wb_csr_rdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
 //handshake signal
     input valid_mem2wb,
     input ready_next_i,
@@ -53,6 +63,10 @@ mem_wb u_mem_wb(
     .mem_alu_res                       (mem_alu_res               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_diff_pc                       (mem_diff_pc               ),
+    .mem_csr_raddr(mem_csr_raddr),
+    .mem_csr_wen(mem_csr_wen),
+    .mem_csr_rdata(mem_csr_rdata),
+    .mem_csr_waddr(mem_csr_waddr),
 
     .wb_inst                           (wb_inst                   ),
     .wb_reg_wen                        (wb_reg_wen                ),
@@ -60,7 +74,11 @@ mem_wb u_mem_wb(
     .wb_regld                          (wb_regld                  ),
     .wb_alu_res                        (wb_alu_res                ),
     .wb_lsu_opt                        (wb_lsu_opt                ),
-    .wb_diff_pc                        (wb_diff_pc                ) 
+    .wb_diff_pc                        (wb_diff_pc                ),
+    .wb_csr_raddr(wb_csr_raddr),
+    .wb_csr_wen(wb_csr_wen),
+    .wb_csr_rdata(wb_csr_rdata),
+    .wb_csr_waddr(wb_csr_waddr) 
 );
 //------------------------------------------------------------------------------
 //  5.WB 

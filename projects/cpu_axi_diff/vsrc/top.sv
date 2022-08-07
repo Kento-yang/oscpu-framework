@@ -38,6 +38,11 @@ module top (
                                 ex_inst     , 
                                 mem_inst    , 
                                 wb_inst     ;
+    //for csr
+    logic   [`CSR_ADDR_WIDTH-1 : 0]     id_csr_raddr, ex_csr_raddr, mem_csr_raddr, wb_csr_raddr;      //读CSR寄存器地址
+    logic                               id_csr_wen,ex_csr_wen, mem_csr_wen, wb_csr_wen;                     // 写CSR寄存器标志
+    logic      [`DATA_WIDTH - 1 : 0]    id_csr_rdata, ex_csr_rdata, mem_csr_rdata, wb_csr_rdata;         // CSR寄存器数据
+    logic      [`CSR_ADDR_WIDTH-1 : 0]  id_csr_waddr, ex_csr_waddr, mem_csr_waddr, wb_csr_waddr;      // 写CSR寄存器地址
 //------------------------------------------------------------------------------
 //  1.IF STAGE
 //------------------------------------------------------------------------------
@@ -173,6 +178,13 @@ id_stage u_id_stage(
     .id_lsu_lden(id_lsu_lden),
     .id_lsu_sten(id_lsu_sten),
     .id_diff_pc                        (id_diff_pc                ),
+//CSR
+    .id_csr_raddr(id_csr_raddr),
+    .id_csr_wen(id_csr_wen),
+    .id_csr_rdata(id_csr_rdata),
+    .id_csr_waddr(id_csr_waddr),    
+
+
     .reg10_a0                          (reg10_a0                  ),
     .bubble_id_ex                      (bubble_id_ex              ),
     .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
@@ -225,6 +237,10 @@ ex_stage u_ex_stage(
     .id_lsu_lden(id_lsu_lden),
     .id_lsu_sten(id_lsu_sten),
     .id_diff_pc                        (id_diff_pc                ),
+    .id_csr_raddr(id_csr_raddr),
+    .id_csr_wen(id_csr_wen),
+    .id_csr_rdata(id_csr_rdata),
+    .id_csr_waddr(id_csr_waddr),
 
     .ex_pc                             (ex_pc                     ),
     .ex_branch                         (ex_branch                 ),
@@ -243,6 +259,10 @@ ex_stage u_ex_stage(
     .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_alu_res_valid                  (ex_alu_res_valid),//div res valid signal.
+    .ex_csr_raddr(ex_csr_raddr),
+    .ex_csr_wen(ex_csr_wen),
+    .ex_csr_rdata(ex_csr_rdata),
+    .ex_csr_waddr(ex_csr_waddr),
 
     .valid_id2ex                       (valid_id2ex               ),
     .ready_mem2ex                      (ready_mem2ex              ),
@@ -269,6 +289,10 @@ mem_stage u_mem_stage(
     .ex_lsu_lden(ex_lsu_lden),
     .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
+    .ex_csr_raddr(ex_csr_raddr),
+    .ex_csr_wen(ex_csr_wen),
+    .ex_csr_rdata(ex_csr_rdata),
+    .ex_csr_waddr(ex_csr_waddr),
 //r/w data memory from/to axi_rw
     .mem_valid_o                       (mem_valid                 ),
     .mem_ready_i                       (mem_ready                 ),
@@ -291,6 +315,12 @@ mem_stage u_mem_stage(
     .mem_regld                         (mem_regld                 ),
 
     .lsu_valid(mem_lsu_valid),
+
+    .mem_csr_raddr(mem_csr_raddr),
+    .mem_csr_wen(mem_csr_wen),
+    .mem_csr_rdata(mem_csr_rdata),
+    .mem_csr_waddr(mem_csr_waddr),
+
     .valid_ex2mem                      (valid_ex2mem              ),
     .ready_wb2mem                      (ready_wb2mem              ),
     .valid_mem2wb                      (valid_mem2wb              ),
@@ -310,18 +340,48 @@ wb_stage u_wb_stage(
     .mem_alu_res                       (mem_alu_res               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_diff_pc                       (mem_diff_pc               ),
+    .mem_csr_raddr(mem_csr_raddr),
+    .mem_csr_wen(mem_csr_wen),
+    .mem_csr_rdata(mem_csr_rdata),
+    .mem_csr_waddr(mem_csr_waddr),
 
     .wb_reg_wdata                      (wb_reg_wdata              ),
     .wb_diff_pc                        (wb_diff_pc                ),
     .wb_inst                           (wb_inst                   ),
     .wb_reg_waddr                      (wb_reg_waddr              ),
     .wb_reg_wen                        (wb_reg_wen                ),
+    .wb_csr_raddr(wb_csr_raddr),
+    .wb_csr_wen(wb_csr_wen),
+    .wb_csr_rdata(wb_csr_rdata),
+    .wb_csr_waddr(wb_csr_waddr),
 
     .valid_mem2wb                       (valid_mem2wb               ),
     .ready_next_i                      ( 1             ),
     .valid_o_next                       ( wbu_valid_o_next              ),
     .ready_wb2mem                       (ready_wb2mem               ) 
 );
+
+//------------------------------------------------------------------------------
+//  CSR REGFILES
+//------------------------------------------------------------------------------
+/*csr_regs u_csr_regs(
+    .clk                (  clk                ),
+    .rst_n              (  rst_n              ),
+    .wb_csr_wen         (  wb_csr_wen         ),
+    .wb_csr_raddr      (   wb_csr_raddr      ),
+    .wb_csr_waddr      (   wb_csr_waddr      ),
+    .wb_csr_wdata      (   wb_csr_wdata      ),
+    .clint_we_i         (           ),
+    .clint_raddr_i     (        ),
+    .clint_waddr_i     (        ),
+    .clint_data_i      (         ),
+    .global_int_en_o    (      ),
+    .clint_data_o      (         ),
+    .clint_csr_mtvec   (      ),
+    .clint_csr_mepc    (       ),
+    .clint_csr_mstatus (    ),
+    .data_o            (   data_o            )
+);*/
 
 
   

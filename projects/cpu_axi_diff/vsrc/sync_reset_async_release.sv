@@ -17,7 +17,7 @@ module sync_reset_async_release(
 			rst_nr2 <= rst_nr1;		//同步释放
 		end
     end
-	
+
 	assign rst_n = rst_nr2;			
 
 endmodule		

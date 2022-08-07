@@ -11,6 +11,11 @@ module decode (
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg_waddr,  // register write address
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg1_raddr, // register 1 read address
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg2_raddr, // register 2 read address
+    //to csr reg
+    output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_raddr,      //读CSR寄存器地址
+    output reg                                  csr_wen,                     // 写CSR寄存器标志
+    output reg      [`DATA_WIDTH - 1 : 0]       csr_rdata,         // CSR寄存器数据
+    output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_waddr,     // 写CSR寄存器地址
     
     output reg      [`IMM_GEN_OP_WIDTH-1 : 0]   imm_gen_op, // immediate extend opcode
 
@@ -18,8 +23,8 @@ module decode (
     output reg      [`ALU_SRC_WIDTH-1 : 0]      alu_src_sel, // alu source select flag
     
     output logic    [`LSU_OPT_WIDTH-1 : 0]      lsu_opt,
-    output logic lsu_lden,
-    output logic lsu_sten,
+    output logic                                lsu_lden,
+    output logic                                lsu_sten,
     output logic                                jalr           
 );
 
@@ -39,6 +44,9 @@ wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
     reg2_raddr  = `REG_ADDR_WIDTH'b0;
     reg_waddr   = `REG_ADDR_WIDTH'b0;
     reg_wen     = 1'b0;
+    csr_wen     = 1'b0; //CSR
+    csr_raddr   = inst[31:20];//CSR
+    csr_waddr   = inst[31:20];//CSR
     case(opcode)    
       `INST_TYPE_R: begin   reg1_raddr = rs1;  reg2_raddr = rs2;  reg_waddr = rd;  reg_wen = 1'b1; end
       `INST_TYPE_I: begin   reg1_raddr = rs1;                     reg_waddr = rd;  reg_wen = 1'b1; end
@@ -51,7 +59,16 @@ wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
       `INST_AUIPC:  begin                                         reg_waddr = rd;  reg_wen = 1'b1; end
       `INST_TYPE_RW:begin   reg1_raddr = rs1;  reg2_raddr = rs2;  reg_waddr = rd;  reg_wen = 1'b1; end
       `INST_TYPE_IW:begin   reg1_raddr = rs1;                     reg_waddr = rd;  reg_wen = 1'b1; end
-      default:  ;
+      //CSR
+      `INST_CSR:begin   case (funct3)
+                            `INST_CSRRW, `INST_CSRRS, `INST_CSRRC: 
+                                begin reg1_raddr = rs1; reg_wen = 1'b1; reg_waddr = rd; csr_wen = 1'b1; end
+                            `INST_CSRRWI, `INST_CSRRSI, `INST_CSRRCI: 
+                                begin                   reg_wen = 1'b1; reg_waddr = rd; csr_wen = 1'b1; end
+                            default:;
+                        endcase 
+                end
+    default:;
     endcase
   end
 
@@ -266,4 +283,5 @@ end
     endcase
   end
 
+  
 endmodule

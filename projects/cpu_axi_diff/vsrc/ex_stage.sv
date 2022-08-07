@@ -29,7 +29,11 @@ module ex_stage(
     input                                       id_lsu_lden,
     input                                       id_lsu_sten,
     input           [`PC_WIDTH-1:0]             id_diff_pc,  
-
+//CSR
+    input   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,
+    input                              id_csr_wen,
+    input   [`DATA_WIDTH - 1:0]        id_csr_rdata,
+    input   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
 
     output    logic   [`PC_WIDTH-1:0]     ex_pc,
     output logic                       ex_branch,                          // ex_branch type 
@@ -48,6 +52,11 @@ module ex_stage(
     output logic                                 ex_lsu_sten,
     output            [`PC_WIDTH-1:0]             ex_diff_pc,
     output logic                                ex_alu_res_valid,//div res valid signal.
+//CSR
+    output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
+    output logic                              ex_csr_wen,
+    output logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr,
 //handshake signal
     input valid_id2ex,
     input ready_mem2ex,
@@ -96,6 +105,11 @@ id_ex u_id_ex(
     .id_lsu_sten                       (id_lsu_sten               ),
     .id_diff_pc                        (id_diff_pc                ),
 
+    .id_csr_raddr(id_csr_raddr),
+    .id_csr_wen(id_csr_wen),
+    .id_csr_rdata(id_csr_rdata),
+    .id_csr_waddr(id_csr_waddr),
+
     .ex_inst                           (ex_inst                   ),
     .ex_pc                             (ex_pc                     ),
     .ex_branch                         (ex_branch                 ),
@@ -113,7 +127,11 @@ id_ex u_id_ex(
     .ex_lsu_opt                        (ex_lsu_opt                ),
     .ex_lsu_lden                       (ex_lsu_lden               ),
     .ex_lsu_sten                       (ex_lsu_sten               ),
-    .ex_diff_pc                        (ex_diff_pc                ) 
+    .ex_diff_pc                        (ex_diff_pc                ),
+    .ex_csr_raddr(ex_csr_raddr),
+    .ex_csr_wen(ex_csr_wen),
+    .ex_csr_rdata(ex_csr_rdata),
+    .ex_csr_waddr(ex_csr_waddr)
 );
 //------------------------------------------------------------------------------
 //  3.EX  

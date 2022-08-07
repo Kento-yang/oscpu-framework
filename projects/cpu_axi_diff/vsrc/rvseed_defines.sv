@@ -40,6 +40,8 @@
 // register 
 `define REG_NUM 32 //32 reg
 `define REG_ADDR_WIDTH 5 // 2^5 = 32
+// csr register
+`define CSR_ADDR_WIDTH 12 // 2^5 = 32
 
 //i-type-shamt
 `define ITYPE_SHAMT 6
@@ -71,8 +73,17 @@
 `define INST_JALR    `OPCODE_WIDTH'b1100111 // jalr
 `define INST_LUI     `OPCODE_WIDTH'b0110111 // lui
 `define INST_AUIPC   `OPCODE_WIDTH'b0010111 // auipc
-`define INST_TYPE_IE `OPCODE_WIDTH'b1110011 // ecall/ebreak
+`define INST_CSR     `OPCODE_WIDTH'b1110011 // ecall/ebreak
 
+// CSR reg addr
+`define CSR_CYCLE   12'hc00
+`define CSR_CYCLEH  12'hc80
+`define CSR_MTVEC   12'h305
+`define CSR_MCAUSE  12'h342
+`define CSR_MEPC    12'h341
+`define CSR_MIE     12'h304
+`define CSR_MSTATUS 12'h300
+`define CSR_MSCRATCH 12'h340
 // funct3
 // R-type
 `define FUNCT3_WIDTH 3
@@ -113,7 +124,13 @@
 // I-type environment
 `define INST_ECALL     `FUNCT3_WIDTH'h0
 `define INST_EBREAK    `FUNCT3_WIDTH'h0
-
+//I-type RC32/64 Zicsr
+`define INST_CSRRW     `FUNCT3_WIDTH'h1
+`define INST_CSRRS     `FUNCT3_WIDTH'h2
+`define INST_CSRRC     `FUNCT3_WIDTH'h3
+`define INST_CSRRWI    `FUNCT3_WIDTH'h5
+`define INST_CSRRSI    `FUNCT3_WIDTH'h6
+`define INST_CSRRCI    `FUNCT3_WIDTH'h7
 //R-type RV32M
 `define INST_MUL       `FUNCT3_WIDTH'h0 
 `define INST_MULH      `FUNCT3_WIDTH'h1

@@ -55,7 +55,12 @@ module id_stage(
     output            [`LSU_OPT_WIDTH-1 : 0]     id_lsu_opt,
     output logic                                 id_lsu_lden,
     output logic                                 id_lsu_sten,
-    output           [`PC_WIDTH-1:0]             id_diff_pc,    
+    output           [`PC_WIDTH-1:0]             id_diff_pc,
+//CSR reg
+    output logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,
+    output logic                              id_csr_wen,
+    output logic   [`DATA_WIDTH - 1:0]        id_csr_rdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,    
 
 //to the top DPIC detect good/bad trap
     output logic    [`DATA_WIDTH-1:0]         reg10_a0,
@@ -114,6 +119,12 @@ decode u1_decode(
     .reg1_raddr                        (id_reg1_raddr             ),
     .reg2_raddr                        (id_reg2_raddr             ),
     .reg_waddr                         (id_reg_waddr              ),
+    //csr
+    .csr_raddr                          (id_csr_raddr), 
+    .csr_wen                            (id_csr_wen  ),    
+    .csr_rdata                          (id_csr_rdata), 
+    .csr_waddr                          (id_csr_waddr), 
+
     .imm_gen_op                        (id_imm_gen_op             ),
     .alu_op                            (id_alu_op                 ),
     .alu_src_sel                       (id_alu_src_sel            ),

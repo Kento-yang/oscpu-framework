@@ -12,6 +12,10 @@ module mem_stage(
     input ex_lsu_lden,
     input ex_lsu_sten,
     input       [`PC_WIDTH-1:0]         ex_diff_pc                 ,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
+    input logic                              ex_csr_wen,
+    input logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr,
 //r/w data memory from/to axi_rw
     output logic                         mem_valid_o,
     input  logic                         mem_ready_i,
@@ -37,6 +41,11 @@ module mem_stage(
     //output                              mem_hold, //to WBU, stall the pipeline
 
     output logic lsu_valid,
+//CSR
+    output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
+    output logic                              mem_csr_wen,
+    output logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
 //handshake signal
     input                               valid_ex2mem               ,
     input                               ready_wb2mem               ,
@@ -68,6 +77,10 @@ ex_mem u_ex_mem(
     .ex_lsu_lden(ex_lsu_lden),
     .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
+    .ex_csr_raddr(ex_csr_raddr),
+    .ex_csr_wen(ex_csr_wen),
+    .ex_csr_rdata(ex_csr_rdata),
+    .ex_csr_waddr(ex_csr_waddr),
 
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
@@ -77,7 +90,11 @@ ex_mem u_ex_mem(
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_lsu_lden(mem_lsu_lden),
     .mem_lsu_sten(mem_lsu_sten),
-    .mem_diff_pc                       (mem_diff_pc               ) 
+    .mem_diff_pc                       (mem_diff_pc               ),
+    .mem_csr_raddr(mem_csr_raddr),
+    .mem_csr_wen(mem_csr_wen),
+    .mem_csr_rdata(mem_csr_rdata),
+    .mem_csr_waddr(mem_csr_waddr)
 );
 //------------------------------------------------------------------------------
 //  MEM-AXI_RW  
