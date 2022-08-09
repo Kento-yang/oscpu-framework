@@ -9,8 +9,12 @@ module alu(
     //input                                start, //div_start
 
     output logic [`DATA_WIDTH-1:0]    alu_res,   // alu result
-    
+
     output logic                        zero,   // alu result is zero    
+//CSR
+    input    [`CSR_IMM_WIDTH -1:0]       csr_zimm,     // 写CSR寄存器地址
+    input    [`DATA_WIDTH - 1 : 0]       csr_rdata,         // CSR寄存器数据
+    output reg   [`DATA_WIDTH - 1 : 0]   csr_wdata,         // CSR寄存器数据
 
     //div handshake
     output logic                       div_ready_o_pre,
@@ -20,13 +24,13 @@ module alu(
         // div开始信号，运算期间这个信号需要一直保持有效
 );
 
-logic                        sububit; // use for sltu,bltu,bgeu
-  // ！！硬件中不区分有符号和无符号，全部按照补码进行运算！！
-  // 所以 src1 - src2 得到是补码！ 如果src1和src2是有符号数，通过输出最高位就可以判断正负！
-  // 如果src1和src2是无符号数，那么就在最高位补0，拓展为有符号数再减法，通过最高位判断正负！
-logic  [ 65 :0] A;
-logic  [ 65 :0] B;
-logic  [131 :0] P;//discard high bit
+    logic                        sububit; // use for sltu,bltu,bgeu
+      // ！！硬件中不区分有符号和无符号，全部按照补码进行运算！！
+      // 所以 src1 - src2 得到是补码！ 如果src1和src2是有符号数，通过输出最高位就可以判断正负！
+      // 如果src1和src2是无符号数，那么就在最高位补0，拓展为有符号数再减法，通过最高位判断正负！
+    logic  [ 65 :0] A;
+    logic  [ 65 :0] B;
+    logic  [131 :0] P;//discard high bit
 
 
 always_comb begin
@@ -97,6 +101,13 @@ always_comb begin
                     end  
         //ALU_REMW:begin alu_res[31:0] = {alu_src1[31:0] % alu_src2[31:0]};      alu_res = {{32{alu_res[31]}}, alu_res[31:0]}; end
         //ALU_REMUW:begin alu_res[31:0] = {{1'b0,alu_src1[31:0]}%{1'b0,alu_src2[31:0]}}[31:0]; alu_res = {{32{alu_res[31]}}, alu_res[31:0]}; end
+    //CSR
+        `ALU_CSRRW :begin csr_wdata = alu_src1;                         alu_res = csr_rdata;end
+        `ALU_CSRRS :begin csr_wdata = csr_rdata | alu_src1 ;            alu_res = csr_rdata; end
+        `ALU_CSRRC :begin csr_wdata = csr_rdata & (~alu_src1);          alu_res = csr_rdata; end
+        `ALU_CSRRWI:begin csr_wdata = {59'h0, csr_zimm};                alu_res = csr_rdata; end
+        `ALU_CSRRSI:begin csr_wdata = {59'h0, csr_zimm} | csr_rdata;    alu_res = csr_rdata; end
+        `ALU_CSRRCI:begin csr_wdata = (~{59'h0, csr_zimm}) & csr_rdata; alu_res = csr_rdata; end
         default: begin alu_res = 64'b0; zero = 0; dividend = 64'h0; divisor = 64'h0; A = 66'h0; B = 66'h0; sububit = 0; end
     endcase
 end

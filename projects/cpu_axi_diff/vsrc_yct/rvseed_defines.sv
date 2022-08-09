@@ -41,8 +41,8 @@
 `define REG_NUM 32 //32 reg
 `define REG_ADDR_WIDTH 5 // 2^5 = 32
 // csr register
-`define CSR_ADDR_WIDTH 12 // 2^5 = 32
-
+`define CSR_ADDR_WIDTH 12 // csr addr width
+`define CSR_IMM_WIDTH 5 
 //i-type-shamt
 `define ITYPE_SHAMT 6
 
@@ -76,14 +76,19 @@
 `define INST_CSR     `OPCODE_WIDTH'b1110011 // ecall/ebreak
 
 // CSR reg addr
-`define CSR_CYCLE   12'hc00
-`define CSR_CYCLEH  12'hc80
-`define CSR_MTVEC   12'h305
-`define CSR_MCAUSE  12'h342
-`define CSR_MEPC    12'h341
-`define CSR_MIE     12'h304
-`define CSR_MSTATUS 12'h300
-`define CSR_MSCRATCH 12'h340
+`define INST_MRET   32'h30200073
+`define ECALL  32'h73
+`define EBREAK 32'h00100073
+
+`define ADDR_CSR_CYCLE   12'hc00
+`define ADDR_CSR_CYCLEH  12'hc80
+`define ADDR_CSR_MSTATUS 12'h300
+`define ADDR_CSR_MIE     12'h304
+`define ADDR_CSR_MTVEC   12'h305
+`define ADDR_CSR_MEPC    12'h341
+`define ADDR_CSR_MCAUSE  12'h342
+
+//`define CSR_MSCRATCH 12'h340
 // funct3
 // R-type
 `define FUNCT3_WIDTH 3
@@ -205,6 +210,15 @@
 `define ALU_SLLI `ALU_OP_WIDTH'b100100
 `define ALU_SRLI `ALU_OP_WIDTH'b100101
 `define ALU_SRAI `ALU_OP_WIDTH'b100110
+//csr aluop
+`define ALU_CSRRW `ALU_OP_WIDTH'b100111
+`define ALU_CSRRS `ALU_OP_WIDTH'b101000
+`define ALU_CSRRC `ALU_OP_WIDTH'b101001
+`define ALU_CSRRWI `ALU_OP_WIDTH'b101010
+`define ALU_CSRRSI `ALU_OP_WIDTH'b101011
+`define ALU_CSRRCI `ALU_OP_WIDTH'b101100
+
+
 
 //`define ALU_LUI `ALU_OP_WIDTH'b100111
 // ALU select soure
@@ -237,3 +251,15 @@
 `define LSU_SW   `LSU_OPT_WIDTH'b010_1    // 0x2 for FUNC3_LW_SW, 1 for store
 `define LSU_SD   `LSU_OPT_WIDTH'b011_1    // RV64I/0x3 for FUNC3_LD_SD, 1 for store
 `define LSU_NOP  `LSU_OPT_WIDTH'b111_1    //1111 for nop!! "lowest bit = 0" <=> "this is an load ins"
+
+
+// clint define:
+`define CLINT_BASE_ADDR `DATA_WIDTH'h2000000                // 0x0200_0000~0x0200_ffff
+`define CLINT_END_ADDR  `DATA_WIDTH'h200ffff                // 0x0200_0000~0x0200_ffff
+`define MSIP_ADDR       `CLINT_BASE_ADDR+`DATA_WIDTH'h0000  //software interrupt, no use
+`define MTIMECMP_ADDR   `CLINT_BASE_ADDR+`DATA_WIDTH'h4000
+`define MTIME_ADDR      `CLINT_BASE_ADDR+`DATA_WIDTH'hBFF8
+
+// intr define:
+`define IRQ_TIMER       `DATA_WIDTH'h80000000_00000007
+`define IRQ_ECALL       `DATA_WIDTH'd11

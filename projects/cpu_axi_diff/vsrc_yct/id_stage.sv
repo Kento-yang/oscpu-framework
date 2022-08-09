@@ -11,6 +11,11 @@ module id_stage(
     input logic                              wb_reg_wen,//from mem_wb
     input logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr, 
     input logic   [`DATA_WIDTH-1:0]          wb_reg_wdata,
+//csr_regfiles 
+    input logic                              wb_csr_reg_wen,//from mem_wb
+    input logic   [`CSR_ADDR_WIDTH-1 : 0]    wb_csr_reg_waddr, 
+    input logic   [`DATA_WIDTH-1:0]          wb_csr_reg_wdata,
+
 //from id_ex_reg
     input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr,
     input logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr,
@@ -56,11 +61,11 @@ module id_stage(
     output logic                                 id_lsu_lden,
     output logic                                 id_lsu_sten,
     output           [`PC_WIDTH-1:0]             id_diff_pc,
-//CSR reg
-    output logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,
-    output logic                              id_csr_wen,
+//CSR output
     output logic   [`DATA_WIDTH - 1:0]        id_csr_rdata,
-    output logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,    
+    output logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
+    output logic   [`CSR_IMM_WIDTH-1:0]      id_csr_zimm,    
+    output logic                              id_csr_wen,
 
 //to the top DPIC detect good/bad trap
     output logic    [`DATA_WIDTH-1:0]         reg10_a0,
@@ -79,6 +84,7 @@ module id_stage(
     //output data_out 
 
 );
+
 //------------------------------------------------------------------------------
 //  IF-ID REG   
 //------------------------------------------------------------------------------
@@ -109,7 +115,7 @@ if_id u1_if_id(
     //logic                              id_jump;
     //logic                              id_reg_wen;
     logic   [`IMM_GEN_OP_WIDTH-1:0]    id_imm_gen_op;
-
+    logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr;
 decode u1_decode(
     .inst                              (id_inst                   ),
 
@@ -122,8 +128,8 @@ decode u1_decode(
     //csr
     .csr_raddr                          (id_csr_raddr), 
     .csr_wen                            (id_csr_wen  ),    
-    .csr_rdata                          (id_csr_rdata), 
     .csr_waddr                          (id_csr_waddr), 
+    .csr_zimm                           (id_csr_zimm), 
 
     .imm_gen_op                        (id_imm_gen_op             ),
     .alu_op                            (id_alu_op                 ),
@@ -160,6 +166,30 @@ reg_file u1_reg_file(
     .regs_o                            (regs)
 );
 
+//------------------------------------------------------------------------------
+//  CSR REGFILES
+//------------------------------------------------------------------------------
+csr_regs u_csr_regs(
+    .clk                (  clk                ),
+    .rst_n              (  rst_n              ),
+
+    .wb_csr_wdata      (   wb_csr_wdata      ),
+    .wb_csr_waddr      (   wb_csr_waddr      ),
+    .wb_csr_wen         (  wb_csr_wen         ),
+    
+    .id_csr_raddr      (   id_csr_raddr      ),
+
+    .clint_we_i         (           ),
+    .clint_raddr_i     (        ),
+    .clint_waddr_i     (        ),
+    .clint_data_i      (         ),
+    .global_int_en_o    (      ),
+    .clint_data_o      (         ),
+    .clint_csr_mtvec   (      ),
+    .clint_csr_mepc    (       ),
+    .clint_csr_mstatus (    ),
+    .data_o            (   id_csr_rdata            )
+);
 
 // bypass in ID cycle ////////////////
     

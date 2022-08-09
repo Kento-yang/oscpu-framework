@@ -11,10 +11,10 @@ module wb_stage(
     input         [`LSU_OPT_WIDTH-1:0]        mem_lsu_opt ,
     input             [`PC_WIDTH-1:0]             mem_diff_pc,
 //CSR
-    input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
-    input logic                              mem_csr_wen,
-    input logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
+
+    input logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
     input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+    input logic                              mem_csr_wen,
 
     output            [`DATA_WIDTH-1:0]          wb_reg_wdata,
     output     logic   [`PC_WIDTH-1:0]            wb_diff_pc  ,
@@ -22,10 +22,10 @@ module wb_stage(
     output    logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr,                  // register write address
     output     logic                              wb_reg_wen,
 //CSR
-    output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_raddr,
-    output logic                              wb_csr_wen,
-    output logic   [`DATA_WIDTH - 1:0]        wb_csr_rdata,
+
+    output logic   [`DATA_WIDTH - 1:0]        wb_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
+    output logic                              wb_csr_wen,
 //handshake signal
     input valid_mem2wb,
     input ready_next_i,
@@ -41,8 +41,6 @@ module wb_stage(
     logic                              pipe_wen = valid_mem2wb && ready_wb2mem;
     //logic  [`DATA_WIDTH-1:0]           mem_regld    ;
 
- 
-    
     
     logic  [`DATA_WIDTH-1:0]           wb_regld   ;
     logic  [`DATA_WIDTH-1:0]           wb_alu_res ;

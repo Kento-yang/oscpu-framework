@@ -30,10 +30,10 @@ module ex_stage(
     input                                       id_lsu_sten,
     input           [`PC_WIDTH-1:0]             id_diff_pc,  
 //CSR
-    input   [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,
-    input                              id_csr_wen,
-    input   [`DATA_WIDTH - 1:0]        id_csr_rdata,
-    input   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
+    input logic   [`DATA_WIDTH - 1:0]        id_csr_rdata,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
+    input logic   [`CSR_IMM_WIDTH-1:0]      id_csr_zimm,    
+    input logic                              id_csr_wen,
 
     output    logic   [`PC_WIDTH-1:0]     ex_pc,
     output logic                       ex_branch,                          // ex_branch type 
@@ -50,13 +50,13 @@ module ex_stage(
     output             [`LSU_OPT_WIDTH-1 : 0]    ex_lsu_opt    ,
     output logic                                 ex_lsu_lden,
     output logic                                 ex_lsu_sten,
-    output            [`PC_WIDTH-1:0]             ex_diff_pc,
+    output            [`PC_WIDTH-1:0]            ex_diff_pc,
     output logic                                ex_alu_res_valid,//div res valid signal.
 //CSR
-    output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
-    output logic                              ex_csr_wen,
-    output logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+    
+    output logic   [`DATA_WIDTH - 1:0]        ex_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr,
+    output logic                              ex_csr_wen,
 //handshake signal
     input valid_id2ex,
     input ready_mem2ex,
@@ -78,6 +78,7 @@ module ex_stage(
     logic   [`ALU_OP_WIDTH-1 : 0]      ex_alu_op;
     logic   [`ALU_SRC_WIDTH-1 : 0]     ex_alu_src_sel;
     //logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;
+
 
 id_ex u_id_ex(
     .clk                               (clk                       ),
@@ -105,10 +106,10 @@ id_ex u_id_ex(
     .id_lsu_sten                       (id_lsu_sten               ),
     .id_diff_pc                        (id_diff_pc                ),
 
-    .id_csr_raddr(id_csr_raddr),
-    .id_csr_wen(id_csr_wen),
-    .id_csr_rdata(id_csr_rdata),
-    .id_csr_waddr(id_csr_waddr),
+    .id_csr_rdata                      (id_csr_rdata              ),
+    .id_csr_waddr                      (id_csr_waddr              ),
+    .id_csr_zimm                       (id_csr_zimm              ),
+    .id_csr_wen                        (id_csr_wen                ),
 
     .ex_inst                           (ex_inst                   ),
     .ex_pc                             (ex_pc                     ),
@@ -128,10 +129,12 @@ id_ex u_id_ex(
     .ex_lsu_lden                       (ex_lsu_lden               ),
     .ex_lsu_sten                       (ex_lsu_sten               ),
     .ex_diff_pc                        (ex_diff_pc                ),
-    .ex_csr_raddr(ex_csr_raddr),
-    .ex_csr_wen(ex_csr_wen),
-    .ex_csr_rdata(ex_csr_rdata),
-    .ex_csr_waddr(ex_csr_waddr)
+
+    .ex_csr_rdata                      (ex_csr_rdata              ),
+    .ex_csr_waddr                      (ex_csr_waddr              ),
+    .ex_csr_zimm                       (ex_csr_zimm              ),
+    .ex_csr_wen                        (ex_csr_wen                )
+
 );
 //------------------------------------------------------------------------------
 //  3.EX  
@@ -180,13 +183,21 @@ alu u0_alu(
     .alu_op                            (ex_alu_op                 ),
     .alu_src1                          (ex_alu_src1               ),
     .alu_src2                          (ex_alu_src2               ),
-    .div_ready_next_i(ready_mem2ex),
+    
     //.start                             (div_start                 ), 
 
     .alu_res                           (ex_alu_res                ),
-    .div_ready_o_pre(div_ready_o_pre),
+    
     .zero                              (ex_zero                   ), // alu result is zero
-    .alu_valid_o_next (alu_valid_o_next)
+
+    .csr_zimm                            (ex_csr_zimm),  
+    .csr_rdata                          (ex_csr_rdata), 
+    .csr_wdata                          (ex_csr_wdata), 
+
+    
+    .div_ready_o_pre                   (div_ready_o_pre           ),
+    .div_ready_next_i                  (ready_mem2ex              ),
+    .alu_valid_o_next                  (alu_valid_o_next)
 );
 
 mux_ldst_bp#(
@@ -204,7 +215,7 @@ mux_ldst_bp#(
 //handshake
 logic valid_o_next_r, ready_o_pre_r;
 assign valid_ex2mem = /*ex_alu_res_valid &&*/ valid_o_next_r && alu_valid_o_next; /*&& div_valid_o_next*/;//alu caculate finished and handshake valid = 1. 
-assign ready_ex2id =  /*ex_alu_res_valid &&*/ ready_o_pre_r &&  alu_valid_o_next;//ex_alu_res_valid && ready_o_pre_r
+assign ready_ex2id =  /*ex_alu_res_valid &&*/ ready_o_pre_r &&  alu_valid_o_next; //ex_alu_res_valid && ready_o_pre_r
 
 pipehandshake u_pipehandshake(
     .clk                               (clk                       ),

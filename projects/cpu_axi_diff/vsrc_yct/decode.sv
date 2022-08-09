@@ -11,11 +11,11 @@ module decode (
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg_waddr,  // register write address
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg1_raddr, // register 1 read address
     output reg      [`REG_ADDR_WIDTH-1 : 0]     reg2_raddr, // register 2 read address
-    //to csr reg
+//to csr reg
     output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_raddr,      //读CSR寄存器地址
     output reg                                  csr_wen,                     // 写CSR寄存器标志
-    output reg      [`DATA_WIDTH - 1 : 0]       csr_rdata,         // CSR寄存器数据
     output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_waddr,     // 写CSR寄存器地址
+    output reg      [`CSR_IMM_WIDTH -1:0]       csr_zimm,     // 写CSR寄存器地址
     
     output reg      [`IMM_GEN_OP_WIDTH-1 : 0]   imm_gen_op, // immediate extend opcode
 
@@ -33,10 +33,12 @@ wire [`FUNCT3_WIDTH-1:0]    funct3 = inst[`FUNCT3_WIDTH+`FUNCT3_BASE-1:`FUNCT3_B
 wire [`FUNCT7_WIDTH-1:0]    funct7 = inst[`FUNCT7_WIDTH+`FUNCT7_BASE-1:`FUNCT7_BASE];//[31:25] R-type
 wire [`REG_ADDR_WIDTH-1:0]  rd     = inst[`REG_ADDR_WIDTH+`RD_BASE-1:`RD_BASE];//[11:7] 
 wire [`REG_ADDR_WIDTH-1:0]  rs1    = inst[`REG_ADDR_WIDTH+`RS1_BASE-1:`RS1_BASE];//[19:15]
+//wire [`REG_ADDR_WIDTH-1:0]  uimm   = inst[`REG_ADDR_WIDTH+`RS1_BASE-1:`RS1_BASE];//[19:15] CSR IMM
 wire [`REG_ADDR_WIDTH-1:0]  rs2    = inst[`REG_ADDR_WIDTH+`RS2_BASE-1:`RS2_BASE];//[24:20]
 
 wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
 //inst type decode,use opcode[6:0]
+
 
 //==============1.REG INFO DECODE==============
   always@(*)begin
@@ -47,6 +49,7 @@ wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
     csr_wen     = 1'b0; //CSR
     csr_raddr   = inst[31:20];//CSR
     csr_waddr   = inst[31:20];//CSR
+    csr_zimm    = inst[19:15];//CSR
     case(opcode)    
       `INST_TYPE_R: begin   reg1_raddr = rs1;  reg2_raddr = rs2;  reg_waddr = rd;  reg_wen = 1'b1; end
       `INST_TYPE_I: begin   reg1_raddr = rs1;                     reg_waddr = rd;  reg_wen = 1'b1; end
@@ -254,6 +257,16 @@ wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
                 default:;   
             endcase
         end
+        `INST_CSR:
+            case (funct3)
+                `INST_CSRRW:  alu_op = `ALU_CSRRW;  
+                `INST_CSRRS:  alu_op = `ALU_CSRRS;
+                `INST_CSRRC:  alu_op = `ALU_CSRRC;
+                `INST_CSRRWI: alu_op = `ALU_CSRRWI;
+                `INST_CSRRSI: alu_op = `ALU_CSRRSI;
+                `INST_CSRRCI: alu_op = `ALU_CSRRCI;
+                default:;
+            endcase 
         default:;
     endcase 
 end

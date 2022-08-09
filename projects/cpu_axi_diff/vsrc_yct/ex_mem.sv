@@ -14,10 +14,10 @@ module ex_mem (
   input ex_lsu_sten,
  input            [`PC_WIDTH-1:0]             ex_diff_pc,
 //CSR
-     input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
-    input logic                              ex_csr_wen,
-    input logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+    
+    input logic   [`DATA_WIDTH - 1:0]        ex_csr_wdata,
     input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr,
+    input logic                              ex_csr_wen,
 
   output logic            [`INST_WIDTH-1:0]           mem_inst   ,
   output logic                                mem_reg_wen,
@@ -29,10 +29,10 @@ module ex_mem (
   output logic   mem_lsu_sten,
   output logic            [`PC_WIDTH-1:0]             mem_diff_pc,
 //CSR
-  output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
-  output logic                              mem_csr_wen,
-  output logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
-  output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr
+
+  output logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
+  output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+  output logic                              mem_csr_wen
 );
   //logic tem_zero;
   logic        [`INST_WIDTH-1:0]     tem_inst;
@@ -44,7 +44,7 @@ module ex_mem (
   logic tem_lsu_lden,tem_lsu_sten;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_raddr;
   logic                              tem_csr_wen;
-  logic   [`DATA_WIDTH - 1:0]        tem_csr_rdata;
+  logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
   //logic            [`PC_WIDTH-1:0]     tem_diff_pc;/only stage id-ex ex-mem need set tem diff pc
 
@@ -58,10 +58,10 @@ module ex_mem (
   assign tem_lsu_lden = ex_lsu_lden;
   assign tem_lsu_sten = ex_lsu_sten;
 
-  assign tem_csr_raddr = ex_csr_raddr;
-  assign tem_csr_wen   = ex_csr_wen;
-  assign tem_csr_rdata = ex_csr_rdata;
+  assign tem_csr_wdata = ex_csr_wdata;
   assign tem_csr_waddr = ex_csr_waddr;
+  assign tem_csr_wen   = ex_csr_wen;
+
   Reg #(
     .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 2*`DATA_WIDTH + `LSU_OPT_WIDTH+ `PC_WIDTH + 2),
     .RESET_VAL  (0                    )
@@ -70,9 +70,9 @@ module ex_mem (
     .rst_n    (rst_n              ),
     .wen      (pipe_wen                ),
     .din      ({tem_inst, tem_reg_wen,  tem_reg_waddr,  tem_alu_res, tem_reg2_rdata, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,ex_diff_pc,
-                tem_csr_raddr,tem_csr_wen,tem_csr_rdata,tem_csr_waddr}),
+                tem_csr_wen, tem_csr_wdata, tem_csr_waddr}),
     .dout     ({mem_inst, mem_reg_wen,  mem_reg_waddr,  mem_alu_res, mem_reg2_rdata, mem_lsu_opt,mem_lsu_lden,mem_lsu_sten,mem_diff_pc,
-                mem_csr_raddr,mem_csr_wen,mem_csr_rdata,mem_csr_waddr})
+                mem_csr_wen, mem_csr_wdata, mem_csr_waddr})
   );
 
 

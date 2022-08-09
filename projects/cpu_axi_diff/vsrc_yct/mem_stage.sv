@@ -12,10 +12,11 @@ module mem_stage(
     input ex_lsu_lden,
     input ex_lsu_sten,
     input       [`PC_WIDTH-1:0]         ex_diff_pc                 ,
-    input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_raddr,
-    input logic                              ex_csr_wen,
-    input logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata,
+//CSR
+    input logic   [`DATA_WIDTH - 1:0]        ex_csr_wdata,
     input logic   [`CSR_ADDR_WIDTH-1:0]      ex_csr_waddr,
+    input logic                              ex_csr_wen,
+
 //r/w data memory from/to axi_rw
     output logic                         mem_valid_o,
     input  logic                         mem_ready_i,
@@ -24,7 +25,7 @@ module mem_stage(
     output logic [`AXI_DATA_WIDTH-1: 0]  mem_data_write_o,           // rs2 from previous stage
     output logic [`AXI_ADDR_WIDTH-1: 0]  mem_rw_addr_i,           // compute result from previous stage
     output logic [1:0]                   mem_rw_size_o,
-    input  logic     [1:0]                   mem_rw_resp_i,
+    input  logic     [1:0]               mem_rw_resp_i,
     output logic [`AXI_DATA_WIDTH/8-1:0] mem_write_mask_o,
 //to next stage
     output      [`INST_WIDTH-1:0]       mem_inst                   ,
@@ -42,10 +43,10 @@ module mem_stage(
 
     output logic lsu_valid,
 //CSR
-    output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
-    output logic                              mem_csr_wen,
-    output logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
+    
+    output logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+    output logic                              mem_csr_wen,
 //handshake signal
     input                               valid_ex2mem               ,
     input                               ready_wb2mem               ,

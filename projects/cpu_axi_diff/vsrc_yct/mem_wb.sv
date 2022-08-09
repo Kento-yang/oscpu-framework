@@ -13,10 +13,11 @@ module mem_wb (
   input         [`DATA_WIDTH-1:0]           mem_alu_res    ,
   input         [`LSU_OPT_WIDTH-1:0]        mem_lsu_opt ,
   input             [`PC_WIDTH-1:0]             mem_diff_pc,
-  input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_raddr,
-  input logic                              mem_csr_wen,
-  input logic   [`DATA_WIDTH - 1:0]        mem_csr_rdata,
-  input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+
+//CSR
+    input logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+    input logic                              mem_csr_wen,
 
   output logic            [`INST_WIDTH-1:0]           wb_inst   ,
   output logic                              wb_reg_wen,   
@@ -26,10 +27,10 @@ module mem_wb (
   output logic  [`DATA_WIDTH-1:0]           wb_alu_res ,
   output logic  [`LSU_OPT_WIDTH-1:0]        wb_lsu_opt ,
   output logic             [`PC_WIDTH-1:0]             wb_diff_pc,
-  output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_raddr,
-  output logic                              wb_csr_wen,
-  output logic   [`DATA_WIDTH - 1:0]        wb_csr_rdata,
-  output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr
+
+    output logic   [`DATA_WIDTH - 1:0]        wb_csr_wdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
+    output logic                              wb_csr_wen,
  
 );
   logic [`INST_WIDTH-1:0]           tem_inst   ;
@@ -40,9 +41,10 @@ module mem_wb (
   logic  [`DATA_WIDTH-1:0]           tem_alu_res ;
   logic  [`LSU_OPT_WIDTH-1:0]        tem_lsu_opt ;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_raddr;
-  logic                              tem_csr_wen;
-  logic   [`DATA_WIDTH - 1:0]        tem_csr_rdata;
+
+  logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
+  logic                              tem_csr_wen;
 
  assign tem_inst = mem_inst;
   assign tem_reg_wen = mem_reg_wen;
@@ -51,9 +53,10 @@ module mem_wb (
   assign tem_alu_res = mem_alu_res;
   assign tem_lsu_opt = mem_lsu_opt;
   assign tem_csr_raddr = mem_csr_raddr;
-  assign tem_csr_wen = mem_csr_wen;
-  assign tem_csr_rdata = mem_csr_rdata;
+
+  assign tem_csr_wdata = mem_csr_wdata;
   assign tem_csr_waddr = mem_csr_waddr;
+  assign tem_csr_wen = mem_csr_wen;
 
   Reg #(
     .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 2*`DATA_WIDTH + `LSU_OPT_WIDTH + `PC_WIDTH),
@@ -63,9 +66,9 @@ module mem_wb (
     .rst_n    (rst_n              ),
     .wen      (pipe_wen                ),
     .din      ({tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,mem_diff_pc,
-                tem_csr_raddr,tem_csr_wen,tem_csr_rdata,tem_csr_waddr}),
+                tem_csr_wdata, tem_csr_waddr, tem_csr_wen}),
     .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
-                wb_csr_raddr,wb_csr_wen,wb_csr_rdata,wb_csr_waddr})
+                wb_csr_wdata, wb_csr_waddr, wb_csr_wen})
   );
 
   
