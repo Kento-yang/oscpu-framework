@@ -30,6 +30,7 @@ module csr_regs(
     output logic     [`DATA_WIDTH-1:0]          csr_mepc          ,   // mret.
     output logic     [`DATA_WIDTH-1:0]          csr_mip           ,
     output logic     [`DATA_WIDTH-1:0]          csr_mie           ,
+    output logic     [`DATA_WIDTH-1:0]          csr_mscratch      ,
 // from clint timer interupt
     input  logic                                i_clint_mtip,
 // for difftest:
@@ -40,7 +41,8 @@ module csr_regs(
     output logic     [`DATA_WIDTH-1:0]          s_mcycle        ,
     output logic     [`DATA_WIDTH-1:0]          s_mie           ,
     output logic     [`DATA_WIDTH-1:0]          s_mip           ,
- 
+    output logic     [`DATA_WIDTH-1:0]          s_mscratch           ,
+    
     output logic                                global_int_en                 // 全局中断使能标志
      
 );   
@@ -51,7 +53,7 @@ module csr_regs(
     logic   [`DATA_WIDTH-1:0]   mcycle      ; // Machine cycle.
     logic   [`DATA_WIDTH-1:0]   mie         ; // Machine interrupt eanble reg
     logic   [`DATA_WIDTH-1:0]   mip         ; // Machine interrupt pending reg
-    //logic   [`DATA_WIDTH-1:0]   mscratch    ;    
+    logic   [`DATA_WIDTH-1:0]   mscratch    ;    
 //------------------------------------------------------------------------------
 //  READ CSR REGFILES
 //------------------------------------------------------------------------------
@@ -68,7 +70,7 @@ module csr_regs(
                 `ADDR_CSR_MIE:       id_csr_rdata = mie;
                 `ADDR_CSR_MIP:       id_csr_rdata = mip;
                 `ADDR_CSR_MSTATUS:   id_csr_rdata = mstatus;
-                //`ADDR_CSR_MSCRATCH:  id_csr_rdata= mscratch;
+                `ADDR_CSR_MSCRATCH:  id_csr_rdata = mscratch;
                 default:             id_csr_rdata = `DATA_WIDTH'h0;   
             endcase
         end
@@ -81,6 +83,7 @@ module csr_regs(
     assign csr_mstatus = mstatus  ;
     assign csr_mie     = mie      ;
     assign csr_mip     = mip      ;
+    assign csr_mscratch = mscratch;
 
     assign global_int_en = (mstatus[3] == 1'b1)? 1'b1 : 1'b0;
 
@@ -179,8 +182,8 @@ Reg #(
     .dout   (mie         )
   );
   // 3.7 mip: //////////////////////////////////////////////////////////////////////////
-  assign mip[7] = i_clint_mtip;//mip include pending interrupts, MTIP = mip[7] 
-
+  assign mip[7] = 0;//i_clint_mtip;//mip include pending interrupts, MTIP = mip[7] 
+  wire [`DATA_WIDTH-1:0] wdata_mip = wb_csr_wdata;
   wire wen_mip = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MIP )) ;
   Reg #(
     .WIDTH    (`DATA_WIDTH-1 ),
@@ -189,8 +192,21 @@ Reg #(
     .clk    (clk        ),
     .rst_n  (rst_n      ),
     .wen    (wen_mip      ),
-    .din    ({wb_csr_wdata[`DATA_WIDTH-1:8], wb_csr_wdata[6:0]}),
+    .din    ({wdata_mip[`DATA_WIDTH-1:8], wdata_mip[6:0]}),
     .dout   ({         mip[`DATA_WIDTH-1:8],          mip[6:0]})
+  );
+  // 3.8 mscratch: //////////////////////////////////////////////////////////////////////////
+  wire wen_mscratch = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MSCRATCH )) ;
+  wire [`DATA_WIDTH-1:0] wdata_mscratch = wb_csr_wdata;
+  Reg #(
+    .WIDTH    (`DATA_WIDTH-1 ),
+    .RESET_VAL(0)
+  ) reg_mscratch (
+    .clk    (clk        ),
+    .rst_n  (rst_n      ),
+    .wen    (wen_mscratch      ),
+    .din    (wdata_mscratch),
+    .dout   (mscratch)
   );
 
   // 4. use for difftest sim :///////////////////////////////////////////////////////////
@@ -200,6 +216,6 @@ Reg #(
   assign s_mstatus= wen_mstatus ? wdata_mstatus: mstatus ;
   assign s_mcycle = wdata_mcycle;
   assign s_mie    = wen_mie     ? wdata_mie    : mie     ;
-  assign s_mip    = wen_mip     ? {wb_csr_wdata[`DATA_WIDTH-1:8],mip[7],wb_csr_wdata[6:0]} : mip ;
-
+  assign s_mip    = wen_mip     ? wb_csr_wdata : mip     ; //{wb_csr_wdata[`DATA_WIDTH-1:8],mip[7],wb_csr_wdata[6:0]} : mip ;
+  assign s_mscratch = wen_mscratch ? wdata_mscratch : mscratch;
 endmodule

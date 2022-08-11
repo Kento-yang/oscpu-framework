@@ -73,7 +73,7 @@
 `define INST_JALR    `OPCODE_WIDTH'b1100111 // jalr
 `define INST_LUI     `OPCODE_WIDTH'b0110111 // lui
 `define INST_AUIPC   `OPCODE_WIDTH'b0010111 // auipc
-`define INST_CSR     `OPCODE_WIDTH'b1110011 // ecall/ebreak
+`define INST_CSR     `OPCODE_WIDTH'b1110011 // SYS TYPE ecall/ebreak/csrrw/csrrs/csrrc
 
 // CSR reg addr
 `define INST_MRET   32'h30200073

@@ -10,6 +10,7 @@ module wb_stage(
     input         [`DATA_WIDTH-1:0]           mem_alu_res    ,
     input         [`LSU_OPT_WIDTH-1:0]        mem_lsu_opt ,
     input             [`PC_WIDTH-1:0]             mem_diff_pc,
+    input mem_clint_ldst,
 //CSR
 
     input logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
@@ -22,7 +23,7 @@ module wb_stage(
     output    logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr,                  // register write address
     output     logic                              wb_reg_wen,
 //CSR
-
+    output logic wb_clint_ldst,
     output logic   [`DATA_WIDTH - 1:0]        wb_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
     output logic                              wb_csr_wen,
@@ -61,7 +62,7 @@ mem_wb u_mem_wb(
     .mem_alu_res                       (mem_alu_res               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_diff_pc                       (mem_diff_pc               ),
-
+    .mem_clint_ldst(mem_clint_ldst),
     .mem_csr_wdata(mem_csr_wdata),
     .mem_csr_waddr(mem_csr_waddr),
     .mem_csr_wen(mem_csr_wen),
@@ -73,7 +74,7 @@ mem_wb u_mem_wb(
     .wb_alu_res                        (wb_alu_res                ),
     .wb_lsu_opt                        (wb_lsu_opt                ),
     .wb_diff_pc                        (wb_diff_pc                ),
-
+    .wb_clint_ldst(wb_clint_ldst),
     
     .wb_csr_wdata(wb_csr_wdata),
     .wb_csr_waddr(wb_csr_waddr),

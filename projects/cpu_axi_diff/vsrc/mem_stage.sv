@@ -55,7 +55,10 @@ module mem_stage(
     input                               ready_wb2mem               ,
 
     output                              valid_mem2wb               ,
-    output                              ready_mem2ex                
+    output                              ready_mem2ex               ,
+
+//for sim
+    output logic                       mem_clint_ldst
 
 );
 
@@ -117,7 +120,7 @@ ex_mem u_ex_mem(
       else
           lsu_valid = 1'b1;
     end*/
-    assign lsu_valid = mem_ldst_en? mem_ready_i : 1;
+    assign lsu_valid = mem_ldst_en? (addr_axi ? mem_ready_i : 1) : 1;//LD CSR ,return 1.
 
     assign mem_ldst_en   = mem_lsu_lden | mem_lsu_sten;
     assign mem_valid_o   =  mem_ldst_en & addr_axi; //ld or st occupy the axi
@@ -190,10 +193,12 @@ ex_mem u_ex_mem(
 //  5.CLINT  
 //------------------------------------------------------------------------------
     wire addr_clint = (mem_alu_res >= `CLINT_BASE_ADDR) & (mem_alu_res < `CLINT_END_ADDR);
-    wire addr_axi   = !addr_clint;
+    wire addr_axi   = !(addr_clint && (mem_lsu_lden || mem_lsu_sten));//alu_res may in the field, need and the ld/st en.guarennte the res is addr.
 
     assign clint_ren    = addr_clint & mem_lsu_lden;
     assign clint_raddr  = mem_alu_res;
+
+    assign mem_clint_ldst = ~addr_axi;
 
     assign clint_wen    = addr_clint & mem_lsu_sten;
     assign clint_waddr  = mem_alu_res;
@@ -204,8 +209,8 @@ ex_mem u_ex_mem(
 //------------------------------------------------------------------------------
     logic valid_mem2wb_r, ready_mem2ex_r;
 
-    assign valid_mem2wb = valid_mem2wb_r && lsu_valid && addr_axi;
-    assign ready_mem2ex = ready_mem2ex_r && lsu_valid && addr_axi;
+    assign valid_mem2wb = valid_mem2wb_r && lsu_valid ;//&& addr_axi;
+    assign ready_mem2ex = ready_mem2ex_r && lsu_valid ;//&& addr_axi;
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),

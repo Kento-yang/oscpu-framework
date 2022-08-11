@@ -111,7 +111,7 @@ module SimTop(
     .i_axi_r_last    (`AXI_TOP_INTERFACE(r_bits_last  )),
     .i_axi_r_id      (`AXI_TOP_INTERFACE(r_bits_id    )),
     .i_axi_r_user    (`AXI_TOP_INTERFACE(r_bits_user  )),
-    .s_uart_out_valid(io_uart_out_valid                ),
+    .s_uart_out_valid(io_uart_out_valid                ),//
     .s_uart_out_char (io_uart_out_ch                   )
   );
  endmodule

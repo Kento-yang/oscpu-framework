@@ -3,11 +3,14 @@
 ./build.sh -e cpu_axi_diff -c
 cp -r projects/cpu_axi_diff/vsrc/ projects/cpu_axi_diff/build
 if [ $1 = "-b" ]; then
-    bash build.sh -e cpu_axi_diff -b -r "-i non-output/cpu-tests" -m "EMU_TRACE=1 WITH_DRAMSIM3=1"                  
-else
+    #bash build.sh -e cpu_axi_diff -b -r "-i non-output/cpu-tests" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" 
+    ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/rt-thread/rtthread.bin --dump-wave -b 4166000" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b
+else 
+#time
     #./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/time-test/$1-time-test.bin --dump-wave -b 0" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b
+#cpu-tests
     ./build.sh -e cpu_axi_diff -d -s -a "-i non-output/cpu-tests/$1-cpu-tests.bin --dump-wave -b 0" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b
-    #bash build.sh -e cpu_axi_diff -d -b -s -a "-i non-output/cpu-tests/$1-cpu-tests.bin --dump-wave -b 0" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -w
+
 fi
 
 #use batch model: bash update.sh -b

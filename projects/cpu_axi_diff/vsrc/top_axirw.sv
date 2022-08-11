@@ -197,7 +197,7 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .rw_wmask(rw_wmask)
 );
 
-    top u_cpu(
+    top u_top(
         .clk                            (clock),
         .rst_n                          (rst_n_sync),
 
@@ -219,7 +219,9 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
         .mem_size                       (mem_size),
         .mem_resp                       (mem_resp),
 
-        .mem_wmask                      (mem_wmask)
+        .mem_wmask                      (mem_wmask),
+        .s_uart_out_valid(s_uart_out_valid),
+        .s_uart_out_char(s_uart_out_char)
     );
 
 
