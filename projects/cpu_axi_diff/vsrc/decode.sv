@@ -2,25 +2,27 @@
 //ebreak
 //0000000 00001 00000 000 00000 11100 11
 module decode (
-    input           [`INST_WIDTH-1 : 0]         inst,       // instruction input
+    input  logic      [`INST_WIDTH-1 : 0]         inst,       // instruction input
 
-    output reg                                  branch,     // branch flag
-    output reg                                  jump,       // jump flag
+    output logic                                  branch,     // branch flag
+    output logic                                  jump,       // jump flag
 
-    output reg                                  reg_wen,    // register write enable
-    output reg      [`REG_ADDR_WIDTH-1 : 0]     reg_waddr,  // register write address
-    output reg      [`REG_ADDR_WIDTH-1 : 0]     reg1_raddr, // register 1 read address
-    output reg      [`REG_ADDR_WIDTH-1 : 0]     reg2_raddr, // register 2 read address
-//to csr reg
-    output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_raddr,      //读CSR寄存器地址
-    output reg                                  csr_wen,                     // 写CSR寄存器标志
-    output reg      [`CSR_ADDR_WIDTH-1 : 0]     csr_waddr,     // 写CSR寄存器地址
-    output reg      [`CSR_IMM_WIDTH -1:0]       csr_zimm,     // 写CSR寄存器地址
+    output logic                                  reg_wen,    // register write enable
+    output logic      [`REG_ADDR_WIDTH-1 : 0]     reg_waddr,  // register write address
+    output logic      [`REG_ADDR_WIDTH-1 : 0]     reg1_raddr, // register 1 read address
+    output logic      [`REG_ADDR_WIDTH-1 : 0]     reg2_raddr, // register 2 read address
+//to csr
+    output logic      [`CSR_ADDR_WIDTH-1 : 0]     csr_raddr,      //读CSR寄存器地址
+    output logic                                  csr_ren,      //读CSR寄存器地址
+
+    output logic                                  csr_wen,                     // 写CSR寄存器标志
+    output logic      [`CSR_ADDR_WIDTH-1 : 0]     csr_waddr,     // 写CSR寄存器地址
+    output logic      [`CSR_IMM_WIDTH -1:0]       csr_zimm,     // 写CSR寄存器地址
     
-    output reg      [`IMM_GEN_OP_WIDTH-1 : 0]   imm_gen_op, // immediate extend opcode
+    output logic      [`IMM_GEN_OP_WIDTH-1 : 0]   imm_gen_op, // immediate extend opcode
 
-    output reg      [`ALU_OP_WIDTH-1 : 0]       alu_op,     // alu opcode
-    output reg      [`ALU_SRC_WIDTH-1 : 0]      alu_src_sel, // alu source select flag
+    output logic      [`ALU_OP_WIDTH-1 : 0]       alu_op,     // alu opcode
+    output logic      [`ALU_SRC_WIDTH-1 : 0]      alu_src_sel, // alu source select flag
     
     output logic    [`LSU_OPT_WIDTH-1 : 0]      lsu_opt,
     output logic                                lsu_lden,
@@ -36,10 +38,12 @@ wire [`REG_ADDR_WIDTH-1:0]  rs1    = inst[`REG_ADDR_WIDTH+`RS1_BASE-1:`RS1_BASE]
 //wire [`REG_ADDR_WIDTH-1:0]  uimm   = inst[`REG_ADDR_WIDTH+`RS1_BASE-1:`RS1_BASE];//[19:15] CSR IMM
 wire [`REG_ADDR_WIDTH-1:0]  rs2    = inst[`REG_ADDR_WIDTH+`RS2_BASE-1:`RS2_BASE];//[24:20]
 
-wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
+//wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
 //inst type decode,use opcode[6:0]
 
-
+assign csr_ren =  ((opcode == `INST_CSR) && (funct3 == `INST_CSRRW) || (funct3 == `INST_CSRRWI)) ||
+                   (funct3 == `INST_CSRRS) || (funct3 == `INST_CSRRC) || (funct3 == `INST_CSRRSI) || (funct3 == `INST_CSRRCI);
+    
 //==============1.REG INFO DECODE==============
   always@(*)begin
     reg1_raddr  = `REG_ADDR_WIDTH'b0;
@@ -65,9 +69,9 @@ wire [`ITYPE_SHAMT-1:0]     I_type_shamt  = inst[25:20];//[25:20]
       //CSR
       `INST_CSR:begin   case (funct3)
                             `INST_CSRRW, `INST_CSRRS, `INST_CSRRC: 
-                                begin reg1_raddr = rs1; reg_wen = 1'b1; reg_waddr = rd; csr_wen = 1'b1; end
+                                begin reg1_raddr = rs1; reg_wen = 1'b1;  reg_waddr = rd; csr_wen = 1'b1;  end
                             `INST_CSRRWI, `INST_CSRRSI, `INST_CSRRCI: 
-                                begin                   reg_wen = 1'b1; reg_waddr = rd; csr_wen = 1'b1; end
+                                begin                   reg_wen = 1'b1;  reg_waddr = rd; csr_wen = 1'b1;  end
                             default:;
                         endcase 
                 end

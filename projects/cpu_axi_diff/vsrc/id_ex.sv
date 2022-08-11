@@ -6,7 +6,7 @@ module id_ex (
   input                                       bpu_bubble,
   input                                       bypass_bubble,
 
-  input            [`INST_WIDTH-1:0]           id_inst   ,
+  input            [`INST_WIDTH-1:0]          id_inst   ,
   input            [`PC_WIDTH-1:0]            id_pc   ,
   input                                       id_branch,
   input                                       id_jump,
@@ -27,18 +27,18 @@ module id_ex (
 //CSR
   input   [`DATA_WIDTH - 1:0]        id_csr_rdata,
   input   [`CSR_ADDR_WIDTH-1:0]      id_csr_waddr,
-  input   [`CSR_IMM_WIDTH-1:0]      id_csr_zimm,
+  input   [`CSR_IMM_WIDTH-1:0]       id_csr_zimm,
   input                              id_csr_wen,
 
-  output logic            [`INST_WIDTH-1:0]           ex_inst   ,
+  output logic     [`INST_WIDTH-1:0]          ex_inst   ,
   output logic     [`PC_WIDTH-1:0]            ex_pc   ,
   output logic                                ex_branch   ,
   output logic                                ex_jump,
   output logic                                ex_jalr,
   output logic                                ex_reg_wen,
   output logic     [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr,  // register write address
-  output logic            [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr,  // register1 rd address
-  output logic            [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr,  // register2 rd address
+  output logic     [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr,  // register1 rd address
+  output logic     [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr,  // register2 rd address
   output logic     [`DATA_WIDTH-1:0]          ex_reg1_rdata   ,
   output logic     [`DATA_WIDTH-1:0]          ex_reg2_rdata   ,
   output logic     [`DATA_WIDTH-1:0]          ex_imm,

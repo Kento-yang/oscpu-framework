@@ -14,6 +14,11 @@ module if_stage(
 
 //for mux_pc
     //input  logic   [`PC_WIDTH-1 : 0]         curr_pc, 
+//from iru
+    input  logic                    iru_excp   ,//ecall/mret
+    input  logic                    iru_intr   ,//timer
+    input  logic [`DATA_WIDTH-1:0]  iru_pc     ,
+
 //for bpu
     input  logic   [`PC_WIDTH-1:0]     ex_pc,
     input  logic                       ex_branch,                          // ex_branch type 
@@ -124,17 +129,18 @@ mux_pc u_mux_pc(
     .curr_pc_update                    (curr_pc_update            ) 
 );
 
-    logic                       pc_wen = ~bubble_id_ex && (ready_id2if && valid_if2id);//shake success and not insert bubble
-    
+    wire                       pc_wen = ~bubble_id_ex && (ready_id2if && valid_if2id);//shake success and not insert bubble
+    logic        [`PC_WIDTH-1:0]             next_pc_r;  // current pc addr
 pc_update u0_pc_update(
     .clk                               (clk                       ),// system clock
     .rst_n                             (rst_n                     ),// active low reset
     .pc_wen                            (pc_wen                    ),// system enable
     .curr_pc_update                    (curr_pc_update            ),// current pc addr
 
-    .next_pc                           (next_pc                   ) // used for DPIC INST Fetch
+    .next_pc                           (next_pc_r                   ) // used for DPIC INST Fetch
 );
 
+assign next_pc = (iru_excp | iru_intr) ? iru_pc : next_pc_r;
 //------------------------------------------------------------------------------
 //  IF-ID HANDSHAKE 
 //------------------------------------------------------------------------------

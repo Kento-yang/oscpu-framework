@@ -1,83 +1,83 @@
 interface axi4_if;
-  parameter ADDR_W = 32;
-  parameter DATA_W = 64;
-  parameter ID_W   = 4;
-  parameter USER_W = 1;
-
-  localparam STRB_W = DATA_W/8;
+    parameter AXI_ADDR_WIDTH    = 64;
+    parameter AXI_DATA_WIDTH    = 64;
+    parameter AXI_ID_WIDTH      = 4;
+    parameter AXI_USER_WIDTH    = 1;
+    localparam STRB_W           = AXI_DATA_WIDTH / 8;
 
   // 1. addr write channel:
-  logic                   aw_ready  ;
-  logic                   aw_valid  ;
-  logic   [ADDR_W-1:0]    aw_addr   ;
-  logic   [2:0]           aw_prot   ;
-  logic   [7:0]           aw_len    ;
-  logic   [2:0]           aw_size   ;
-  logic   [1:0]           aw_burst  ;
-  logic                   aw_lock   ;
-  logic   [3:0]           aw_cache  ;
-  logic   [3:0]           aw_qos    ;
-  logic   [ID_W-1:0]      aw_id     ;
-  logic   [USER_W-1:0]    aw_user   ;
-  logic   [3:0]           aw_region ;
+    logic                             aw_ready  ;
+    logic                             aw_valid  ;
+    logic   [AXI_ADDR_WIDTH-1:0]      aw_addr   ;
+    logic   [2:0]                     aw_prot   ;
+    logic   [7:0]                     aw_len    ;
+    logic   [2:0]                     aw_size   ;
+    logic   [1:0]                     aw_burst  ;
+    logic                             aw_lock   ;
+    logic   [3:0]                     aw_cache  ;
+    logic   [3:0]                     aw_qos    ;
+    logic   [AXI_ID_WIDTH-1:0]        aw_id     ;
+    logic   [AXI_USER_WIDTH-1:0]      aw_user   ;
+    logic   [3:0]                     aw_region ;
 
-  // 2. data write channel:
-  logic                   w_valid   ;
-  logic   [DATA_W-1:0]    w_data    ;
-  logic   [STRB_W-1:0]    w_strb    ;
-  logic                   w_last    ;
-  logic                   w_ready   ;
-  logic   [USER_W-1:0]    w_user    ; // duo le yige.
+    // 2. data write channel:
+    logic                             w_valid   ;
+    logic   [AXI_DATA_WIDTH-1:0]      w_data    ;
+    logic   [STRB_W-1:0]              w_strb    ;
+    logic                             w_last    ;
+    logic                             w_ready   ;
+    logic   [AXI_USER_WIDTH-1:0]      w_user    ;  
 
-  // 3. write response channel:
-  logic   [1:0]           b_resp    ;
-  logic   [ID_W-1:0]      b_id      ;
-  logic                   b_ready   ;
-  logic                   b_valid   ;
-  logic   [USER_W-1:0]    b_user    ;
+    // 3. write response channel:
+    logic   [1:0]                     b_resp    ;
+    logic   [AXI_ID_WIDTH-1:0]        b_id      ;
+    logic                             b_ready   ;
+    logic                             b_valid   ;
+    logic   [AXI_USER_WIDTH-1:0]      b_user    ;
 
-  // 4. addr read channel:
-  logic                   ar_ready  ;
-  logic                   ar_valid  ;
-  logic   [ADDR_W-1:0]    ar_addr   ;
-  logic   [2:0]           ar_prot   ;
-  logic   [7:0]           ar_len    ;
-  logic   [2:0]           ar_size   ;
-  logic   [1:0]           ar_burst  ;
-  logic                   ar_lock   ;
-  logic   [3:0]           ar_cache  ;
-  logic   [3:0]           ar_qos    ;
-  logic   [ID_W-1:0]      ar_id     ;
-  logic   [USER_W-1:0]    ar_user   ;
-  logic   [3:0]           ar_region ;
+    // 4. addr read channel:
+    logic                             ar_ready  ;
+    logic                             ar_valid  ;
+    logic   [AXI_ADDR_WIDTH-1:0]      ar_addr   ;
+    logic   [2:0]                     ar_prot   ;
+    logic   [7:0]                     ar_len    ;
+    logic   [2:0]                     ar_size   ;
+    logic   [1:0]                     ar_burst  ;
+    logic                             ar_lock   ;
+    logic   [3:0]                     ar_cache  ;
+    logic   [3:0]                     ar_qos    ;
+    logic   [AXI_ID_WIDTH-1:0]        ar_id     ;
+    logic   [AXI_USER_WIDTH-1:0]      ar_user   ;
+    logic   [3:0]                     ar_region ;
 
-  // 5. data read channel:
-  logic   [DATA_W-1:0]    r_data    ;
-  logic   [1:0]           r_resp    ;
-  logic                   r_last    ;
-  logic   [ID_W-1:0]      r_id      ;
-  logic                   r_ready   ;
-  logic                   r_valid   ;
-  logic   [USER_W-1:0]    r_user    ;
+    // 5. data read channel:
+    logic   [AXI_DATA_WIDTH-1:0]      r_data    ;
+    logic   [1:0]                     r_resp    ;
+    logic                             r_last    ;
+    logic   [AXI_ID_WIDTH-1:0]        r_id      ;
+    logic                             r_ready   ;
+    logic                             r_valid   ;
+    logic   [AXI_USER_WIDTH-1:0]      r_user    ;
 
   modport Master
   (
+    //aw
     output aw_valid, output aw_addr, output aw_prot,  output aw_region,
     output aw_len,   output aw_size, output aw_burst, output aw_lock,
     output aw_cache, output aw_qos,  output aw_id,    output aw_user,
     input  aw_ready,
-
+    //ar
     output ar_valid, output ar_addr, output ar_prot,  output ar_region,
     output ar_len,   output ar_size, output ar_burst, output ar_lock,
     output ar_cache, output ar_qos,  output ar_id,    output ar_user,
     input  ar_ready,
-
+    //w
     output w_valid,  output w_data,  output w_strb,   output w_last,
     output w_user,   input  w_ready,
-
+    //r
     input  r_valid,  input  r_data,  input  r_resp,   input  r_last,
     input  r_id,     input  r_user,  output r_ready,
-
+    //b
     input  b_valid,  input  b_resp,  input  b_id,     input  b_user,
     output b_ready
   );

@@ -78,7 +78,8 @@ module ex_stage(
     logic   [`ALU_OP_WIDTH-1 : 0]      ex_alu_op;
     logic   [`ALU_SRC_WIDTH-1 : 0]     ex_alu_src_sel;
     //logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;
-
+    logic   [`CSR_IMM_WIDTH-1:0]      ex_csr_zimm;    
+    logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata;
 
 id_ex u_id_ex(
     .clk                               (clk                       ),
@@ -132,7 +133,7 @@ id_ex u_id_ex(
 
     .ex_csr_rdata                      (ex_csr_rdata              ),
     .ex_csr_waddr                      (ex_csr_waddr              ),
-    .ex_csr_zimm                       (ex_csr_zimm              ),
+    .ex_csr_zimm                       (ex_csr_zimm               ),
     .ex_csr_wen                        (ex_csr_wen                )
 
 );

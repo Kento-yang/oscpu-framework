@@ -34,7 +34,7 @@ module alu(
 
 
 always_comb begin
-    alu_res = 64'b0; zero = 0; dividend = 64'h0; divisor = 64'h0; A = 66'h0; B = 66'h0; sububit = 0; 
+    alu_res = 64'b0; zero = 0; dividend = 64'h0; divisor = 64'h0; A = 66'h0; B = 66'h0; sububit = 0; csr_wdata = 64'h0;
     case (alu_op)
         `ALU_AND:   alu_res = alu_src1 &  alu_src2;
         `ALU_OR:    alu_res = alu_src1 |  alu_src2;
@@ -108,7 +108,7 @@ always_comb begin
         `ALU_CSRRWI:begin csr_wdata = {59'h0, csr_zimm};                alu_res = csr_rdata; end
         `ALU_CSRRSI:begin csr_wdata = {59'h0, csr_zimm} | csr_rdata;    alu_res = csr_rdata; end
         `ALU_CSRRCI:begin csr_wdata = (~{59'h0, csr_zimm}) & csr_rdata; alu_res = csr_rdata; end
-        default: begin alu_res = 64'b0; zero = 0; dividend = 64'h0; divisor = 64'h0; A = 66'h0; B = 66'h0; sububit = 0; end
+        default: begin alu_res = 64'b0; zero = 0; dividend = 64'h0; divisor = 64'h0; A = 66'h0; B = 66'h0; sububit = 0; csr_wdata = 64'h0;end
     endcase
 end
 //for valid

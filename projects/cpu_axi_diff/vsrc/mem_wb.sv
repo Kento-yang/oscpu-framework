@@ -30,7 +30,7 @@ module mem_wb (
 
     output logic   [`DATA_WIDTH - 1:0]        wb_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
-    output logic                              wb_csr_wen,
+    output logic                              wb_csr_wen
  
 );
   logic [`INST_WIDTH-1:0]           tem_inst   ;
@@ -40,7 +40,7 @@ module mem_wb (
   logic  [`DATA_WIDTH-1:0]           tem_regld   ;
   logic  [`DATA_WIDTH-1:0]           tem_alu_res ;
   logic  [`LSU_OPT_WIDTH-1:0]        tem_lsu_opt ;
-  logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_raddr;
+
 
   logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
@@ -52,7 +52,6 @@ module mem_wb (
   assign tem_regld = mem_regld;
   assign tem_alu_res = mem_alu_res;
   assign tem_lsu_opt = mem_lsu_opt;
-  assign tem_csr_raddr = mem_csr_raddr;
 
   assign tem_csr_wdata = mem_csr_wdata;
   assign tem_csr_waddr = mem_csr_waddr;

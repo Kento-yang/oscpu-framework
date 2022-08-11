@@ -80,15 +80,14 @@
 `define ECALL  32'h73
 `define EBREAK 32'h00100073
 
-`define ADDR_CSR_CYCLE   12'hc00
-`define ADDR_CSR_CYCLEH  12'hc80
+`define ADDR_CSR_MCYCLE   12'hb00
 `define ADDR_CSR_MSTATUS 12'h300
-`define ADDR_CSR_MIE     12'h304
 `define ADDR_CSR_MTVEC   12'h305
 `define ADDR_CSR_MEPC    12'h341
 `define ADDR_CSR_MCAUSE  12'h342
-
-//`define CSR_MSCRATCH 12'h340
+`define ADDR_CSR_MSCRATCH 12'h340
+`define ADDR_CSR_MIP    12'h344
+`define ADDR_CSR_MIE     12'h304
 // funct3
 // R-type
 `define FUNCT3_WIDTH 3
@@ -260,6 +259,7 @@
 `define MTIMECMP_ADDR   `CLINT_BASE_ADDR+`DATA_WIDTH'h4000
 `define MTIME_ADDR      `CLINT_BASE_ADDR+`DATA_WIDTH'hBFF8
 
-// intr define:
+// intr define:mcause[XLEN-1] = 1
 `define IRQ_TIMER       `DATA_WIDTH'h80000000_00000007
+// expt define:mcause[XLEN-1] = 0 
 `define IRQ_ECALL       `DATA_WIDTH'd11

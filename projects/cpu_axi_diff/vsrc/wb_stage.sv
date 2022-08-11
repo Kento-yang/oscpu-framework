@@ -61,10 +61,10 @@ mem_wb u_mem_wb(
     .mem_alu_res                       (mem_alu_res               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
     .mem_diff_pc                       (mem_diff_pc               ),
-    .mem_csr_raddr(mem_csr_raddr),
-    .mem_csr_wen(mem_csr_wen),
-    .mem_csr_rdata(mem_csr_rdata),
+
+    .mem_csr_wdata(mem_csr_wdata),
     .mem_csr_waddr(mem_csr_waddr),
+    .mem_csr_wen(mem_csr_wen),
 
     .wb_inst                           (wb_inst                   ),
     .wb_reg_wen                        (wb_reg_wen                ),
@@ -73,10 +73,11 @@ mem_wb u_mem_wb(
     .wb_alu_res                        (wb_alu_res                ),
     .wb_lsu_opt                        (wb_lsu_opt                ),
     .wb_diff_pc                        (wb_diff_pc                ),
-    .wb_csr_raddr(wb_csr_raddr),
-    .wb_csr_wen(wb_csr_wen),
-    .wb_csr_rdata(wb_csr_rdata),
-    .wb_csr_waddr(wb_csr_waddr) 
+
+    
+    .wb_csr_wdata(wb_csr_wdata),
+    .wb_csr_waddr(wb_csr_waddr),
+    .wb_csr_wen(wb_csr_wen)
 );
 //------------------------------------------------------------------------------
 //  5.WB 

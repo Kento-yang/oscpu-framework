@@ -36,17 +36,20 @@ module mem_stage(
     output                              mem_lsu_lden,
     output                              mem_lsu_sten,
     output      [`PC_WIDTH-1:0]         mem_diff_pc                ,
-
     output logic     [`DATA_WIDTH-1:0]       mem_regld                  ,
-
     //output                              mem_hold, //to WBU, stall the pipeline
-
     output logic lsu_valid,
 //CSR
-    
     output logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
     output logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
     output logic                              mem_csr_wen,
+//Clint signals
+    output  logic                       clint_ren   ,
+    output  logic [`DATA_WIDTH-1:0]     clint_raddr ,
+    input   logic [`DATA_WIDTH-1:0]     clint_rdata ,
+    output  logic                       clint_wen   ,
+    output  logic [`DATA_WIDTH-1:0]     clint_waddr ,
+    output  logic [`DATA_WIDTH-1:0]     clint_wdata ,
 //handshake signal
     input                               valid_ex2mem               ,
     input                               ready_wb2mem               ,
@@ -78,10 +81,11 @@ ex_mem u_ex_mem(
     .ex_lsu_lden(ex_lsu_lden),
     .ex_lsu_sten(ex_lsu_sten),
     .ex_diff_pc                        (ex_diff_pc                ),
-    .ex_csr_raddr(ex_csr_raddr),
-    .ex_csr_wen(ex_csr_wen),
-    .ex_csr_rdata(ex_csr_rdata),
+
+    .ex_csr_wdata(ex_csr_wdata),
     .ex_csr_waddr(ex_csr_waddr),
+    .ex_csr_wen(ex_csr_wen),
+
 
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
@@ -92,10 +96,11 @@ ex_mem u_ex_mem(
     .mem_lsu_lden(mem_lsu_lden),
     .mem_lsu_sten(mem_lsu_sten),
     .mem_diff_pc                       (mem_diff_pc               ),
-    .mem_csr_raddr(mem_csr_raddr),
-    .mem_csr_wen(mem_csr_wen),
-    .mem_csr_rdata(mem_csr_rdata),
-    .mem_csr_waddr(mem_csr_waddr)
+
+    
+    .mem_csr_wdata(mem_csr_wdata),
+    .mem_csr_waddr(mem_csr_waddr),
+    .mem_csr_wen(mem_csr_wen)
 );
 //------------------------------------------------------------------------------
 //  MEM-AXI_RW  
@@ -115,7 +120,7 @@ ex_mem u_ex_mem(
     assign lsu_valid = mem_ldst_en? mem_ready_i : 1;
 
     assign mem_ldst_en   = mem_lsu_lden | mem_lsu_sten;
-    assign mem_valid_o   =  mem_ldst_en; //ld or st occupy the axi
+    assign mem_valid_o   =  mem_ldst_en & addr_axi; //ld or st occupy the axi
     assign mem_rw_req_o  =  mem_lsu_sten ;//1:store(write), 0：load(read)
     assign mem_rw_addr_i =  mem_alu_res;
 
@@ -157,19 +162,20 @@ ex_mem u_ex_mem(
   wire [`DATA_WIDTH-1:0] raddr = mem_alu_res;
   
   //=============load=========
+  logic     [`DATA_WIDTH-1:0]       mem_regld_bus;                  
   always @(*) begin
     case (mem_lsu_opt)//rdata->load data
-      `LSU_LB:  begin mem_regld = {{56{rdata[ 7]}}, rdata[ 7:0]}; end
-      `LSU_LH:  begin mem_regld = {{48{rdata[15]}}, rdata[15:0]}; end 
-      `LSU_LW:  begin mem_regld = {{32{rdata[31]}}, rdata[31:0]}; end 
-      `LSU_LD:  begin mem_regld = rdata;                          end
-      `LSU_LBU: begin mem_regld = {56'b0, rdata[ 7:0]};           end
-      `LSU_LHU: begin mem_regld = {48'b0, rdata[15:0]};           end
-      `LSU_LWU: begin mem_regld = {32'b0, rdata[31:0]};           end
-      default:  begin mem_regld = `DATA_WIDTH'b0;                 end
+      `LSU_LB:  begin mem_regld_bus = {{56{rdata[ 7]}}, rdata[ 7:0]}; end
+      `LSU_LH:  begin mem_regld_bus = {{48{rdata[15]}}, rdata[15:0]}; end 
+      `LSU_LW:  begin mem_regld_bus = {{32{rdata[31]}}, rdata[31:0]}; end 
+      `LSU_LD:  begin mem_regld_bus = rdata;                          end
+      `LSU_LBU: begin mem_regld_bus = {56'b0, rdata[ 7:0]};           end
+      `LSU_LHU: begin mem_regld_bus = {48'b0, rdata[15:0]};           end
+      `LSU_LWU: begin mem_regld_bus = {32'b0, rdata[31:0]};           end
+      default:  begin mem_regld_bus = `DATA_WIDTH'b0;                 end
     endcase
   end
-
+    
   logic [`DATA_WIDTH-1:0] wdata;
   always @(*) begin
     case (mem_lsu_opt)
@@ -180,13 +186,26 @@ ex_mem u_ex_mem(
       default:  wmask = 8'b0;
     endcase
   end
+//------------------------------------------------------------------------------
+//  5.CLINT  
+//------------------------------------------------------------------------------
+    wire addr_clint = (mem_alu_res >= `CLINT_BASE_ADDR) & (mem_alu_res < `CLINT_END_ADDR);
+    wire addr_axi   = !addr_clint;
 
+    assign clint_ren    = addr_clint & mem_lsu_lden;
+    assign clint_raddr  = mem_alu_res;
 
-//handshake
+    assign clint_wen    = addr_clint & mem_lsu_sten;
+    assign clint_waddr  = mem_alu_res;
+    assign clint_wdata  = mem_reg2_rdata  ;
+    assign mem_regld    = addr_clint ? clint_rdata : mem_regld_bus;
+//------------------------------------------------------------------------------
+//  HANDSHAKE
+//------------------------------------------------------------------------------
     logic valid_mem2wb_r, ready_mem2ex_r;
 
-    assign valid_mem2wb = valid_mem2wb_r && lsu_valid;
-    assign ready_mem2ex = ready_mem2ex_r && lsu_valid;
+    assign valid_mem2wb = valid_mem2wb_r && lsu_valid && addr_axi;
+    assign ready_mem2ex = ready_mem2ex_r && lsu_valid && addr_axi;
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
