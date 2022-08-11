@@ -18,8 +18,8 @@ module alu(
 
     //div handshake
     output logic                       div_ready_o_pre,
-    input                             div_ready_next_i,
-    output logic                      alu_valid_o_next//alu resuly valid
+    input                              div_ready_next_i,
+    output logic                       alu_valid_o_next//alu resuly valid
     
         // div开始信号，运算期间这个信号需要一直保持有效
 );
