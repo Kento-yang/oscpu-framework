@@ -63,7 +63,7 @@ module ex_mem (
   assign tem_csr_wen   = ex_csr_wen;
 
   Reg #(
-    .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 2*`DATA_WIDTH + `LSU_OPT_WIDTH+ `PC_WIDTH + 2),
+    .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 3*`DATA_WIDTH + `LSU_OPT_WIDTH+ `PC_WIDTH + 2 + 2*`CSR_ADDR_WIDTH+ +1),
     .RESET_VAL  (0                    )
   ) if_id_reg(
   	.clk      (clk                ),

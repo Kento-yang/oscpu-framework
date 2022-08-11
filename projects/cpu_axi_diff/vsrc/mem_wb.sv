@@ -40,6 +40,7 @@ module mem_wb (
   logic  [`DATA_WIDTH-1:0]           tem_regld   ;
   logic  [`DATA_WIDTH-1:0]           tem_alu_res ;
   logic  [`LSU_OPT_WIDTH-1:0]        tem_lsu_opt ;
+  logic  [`PC_WIDTH-1:0]             tem_diff_pc;
 
 
   logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
@@ -52,19 +53,19 @@ module mem_wb (
   assign tem_regld = mem_regld;
   assign tem_alu_res = mem_alu_res;
   assign tem_lsu_opt = mem_lsu_opt;
-
+  assign  tem_diff_pc = mem_diff_pc;          
   assign tem_csr_wdata = mem_csr_wdata;
   assign tem_csr_waddr = mem_csr_waddr;
   assign tem_csr_wen = mem_csr_wen;
 
   Reg #(
-    .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 2*`DATA_WIDTH + `LSU_OPT_WIDTH + `PC_WIDTH),
+    .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 3*`DATA_WIDTH + `LSU_OPT_WIDTH + `PC_WIDTH  +  `CSR_ADDR_WIDTH +1),
     .RESET_VAL  (0                    )
   ) if_id_reg(
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
     .wen      (pipe_wen                ),
-    .din      ({tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,mem_diff_pc,
+    .din      ({tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
                 tem_csr_wdata, tem_csr_waddr, tem_csr_wen}),
     .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
                 wb_csr_wdata, wb_csr_waddr, wb_csr_wen})

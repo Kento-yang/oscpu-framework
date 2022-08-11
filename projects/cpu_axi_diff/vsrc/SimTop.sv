@@ -1,5 +1,4 @@
-
-`include "defines.sv"
+`include "rvseed_defines.sv"
 `define AXI_TOP_INTERFACE(name) io_memAXI_0_``name
 
 module SimTop(
@@ -19,7 +18,7 @@ module SimTop(
 
   input                               `AXI_TOP_INTERFACE(aw_ready     ),
   output                              `AXI_TOP_INTERFACE(aw_valid     ),
-  output [`CPU_WIDTH-1:0]             `AXI_TOP_INTERFACE(aw_bits_addr ),
+  output [`DATA_WIDTH-1:0]            `AXI_TOP_INTERFACE(aw_bits_addr ),
   output [2:0]                        `AXI_TOP_INTERFACE(aw_bits_prot ),
   output [3:0]                        `AXI_TOP_INTERFACE(aw_bits_id   ),
   output                              `AXI_TOP_INTERFACE(aw_bits_user ),
@@ -32,8 +31,8 @@ module SimTop(
   
   input                               `AXI_TOP_INTERFACE(w_ready      ),
   output                              `AXI_TOP_INTERFACE(w_valid      ),
-  output [`CPU_WIDTH-1:0]             `AXI_TOP_INTERFACE(w_bits_data  ) [3:0],
-  output [`CPU_WIDTH/8-1:0]           `AXI_TOP_INTERFACE(w_bits_strb  ),
+  output [`DATA_WIDTH-1:0]            `AXI_TOP_INTERFACE(w_bits_data  ) [3:0],
+  output [`DATA_WIDTH/8-1:0]          `AXI_TOP_INTERFACE(w_bits_strb  ),
   output                              `AXI_TOP_INTERFACE(w_bits_last  ),
   
   output                              `AXI_TOP_INTERFACE(b_ready      ),
@@ -44,7 +43,7 @@ module SimTop(
 
   input                               `AXI_TOP_INTERFACE(ar_ready     ),
   output                              `AXI_TOP_INTERFACE(ar_valid     ),
-  output [`CPU_WIDTH-1:0]             `AXI_TOP_INTERFACE(ar_bits_addr ),
+  output [`DATA_WIDTH-1:0]            `AXI_TOP_INTERFACE(ar_bits_addr ),
   output [2:0]                        `AXI_TOP_INTERFACE(ar_bits_prot ),
   output [3:0]                        `AXI_TOP_INTERFACE(ar_bits_id   ),
   output                              `AXI_TOP_INTERFACE(ar_bits_user ),
@@ -58,15 +57,16 @@ module SimTop(
   output                              `AXI_TOP_INTERFACE(r_ready      ),
   input                               `AXI_TOP_INTERFACE(r_valid      ),
   input  [1:0]                        `AXI_TOP_INTERFACE(r_bits_resp  ),
-  input  [`CPU_WIDTH-1:0]             `AXI_TOP_INTERFACE(r_bits_data  ) [3:0],
+  input  [`DATA_WIDTH-1:0]            `AXI_TOP_INTERFACE(r_bits_data  ) [3:0],
   input                               `AXI_TOP_INTERFACE(r_bits_last  ),
   input  [3:0]                        `AXI_TOP_INTERFACE(r_bits_id    ),
   input                               `AXI_TOP_INTERFACE(r_bits_user  )
   );
   
-  top u_top(
-    .i_clk           (clock           ),
-    .i_rst_n         (!reset          ),
+  top_axirw u_top_axirw(
+    .clock           (clock           ),
+    .rst_n           (!reset          ),
+
     .i_axi_aw_ready  (`AXI_TOP_INTERFACE(aw_ready     )),
     .o_axi_aw_valid  (`AXI_TOP_INTERFACE(aw_valid     )),
     .o_axi_aw_addr   (`AXI_TOP_INTERFACE(aw_bits_addr )),
@@ -114,5 +114,4 @@ module SimTop(
     .s_uart_out_valid(io_uart_out_valid                ),
     .s_uart_out_char (io_uart_out_ch                   )
   );
-
-endmodule
+ endmodule

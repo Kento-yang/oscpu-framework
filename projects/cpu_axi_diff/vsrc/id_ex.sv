@@ -56,23 +56,23 @@ module id_ex (
 
 
 );
-  logic            [`INST_WIDTH-1:0]           tem_inst   ;
+  logic     [`INST_WIDTH-1:0]           tem_inst   ;
   logic     [`PC_WIDTH-1:0]            tem_pc;
   logic                                tem_branch;
   logic                                tem_jump;
   logic                                tem_jalr;
   logic                                tem_reg_wen;
   logic     [`REG_ADDR_WIDTH-1 : 0]    tem_reg_waddr;  // register write address
-  logic            [`REG_ADDR_WIDTH-1 : 0]    tem_reg1_raddr;  // register1 rd address
-  logic            [`REG_ADDR_WIDTH-1 : 0]    tem_reg2_raddr;  // register2 rd address
+  logic     [`REG_ADDR_WIDTH-1 : 0]    tem_reg1_raddr;  // register1 rd address
+  logic     [`REG_ADDR_WIDTH-1 : 0]    tem_reg2_raddr;  // register2 rd address
   logic     [`DATA_WIDTH-1:0]          tem_reg1_rdata;
   logic     [`DATA_WIDTH-1:0]          tem_reg2_rdata;
   logic     [`DATA_WIDTH-1:0]          tem_imm;
   logic     [`ALU_OP_WIDTH-1 : 0]      tem_alu_op;
   logic     [`ALU_SRC_WIDTH-1 : 0]     tem_alu_src_sel;
   logic     [`LSU_OPT_WIDTH-1 : 0]     tem_lsu_opt;
-  logic tem_lsu_lden;
-  logic tem_lsu_sten;
+  logic                                 tem_lsu_lden;
+  logic                                 tem_lsu_sten;
   logic           [`PC_WIDTH-1:0]             tem_diff_pc; 
   
   logic   [`DATA_WIDTH - 1:0]        tem_csr_rdata;
@@ -110,8 +110,8 @@ module id_ex (
 
 
 Reg #(
-    .WIDTH      (`INST_WIDTH+2*`PC_WIDTH + 4 + 3*`REG_ADDR_WIDTH + 3*`DATA_WIDTH + 
-                `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH + 2),
+    .WIDTH      (`INST_WIDTH+2*`PC_WIDTH + 4 + 3*`REG_ADDR_WIDTH + 4*`DATA_WIDTH + 
+                `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH + 2 +  `CSR_ADDR_WIDTH+ `CSR_IMM_WIDTH +1),
     .RESET_VAL  (0                    )
   ) if_id_reg(
   	.clk      (clk                ),
