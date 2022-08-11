@@ -1,81 +1,70 @@
-//1.定时器中断/ECALL时，触发例外，进行保护寄存器到csr寄存器堆操作
-//
-`include "rvseed_defines.sv"
 module iru (
+  input   logic                   i_clk         ,
+  input   logic                   i_rst_n       ,
   // wbu:
-  input   logic                    wb_valid   ,
-  input   logic                    wb_ready   ,
-  //input   logic                    wbu_nop     ,
-  input   logic [`INST_WIDTH-1:0]  wb_inst     ,
-  input   logic [`DATA_WIDTH-1:0]  wb_pc      ,
+  input   logic                   i_wbu_valid   ,
+  input   logic                   i_wbu_ready   ,
+  input   logic                   i_wbu_nop     ,
+  input   logic [`INS_WIDTH-1:0]  i_wbu_ins     ,
+  input   logic [`CPU_WIDTH-1:0]  i_wbu_pc      ,
 
   // for bru:
-  output  logic                    o_iru_excp   ,//ecall/mret
-  output  logic                    o_iru_intr   ,//timer
-  output  logic [`DATA_WIDTH-1:0]  o_iru_pc     ,
+  output  logic                   o_iru_excp   ,
+  output  logic                   o_iru_intr   ,
+  output  logic [`CPU_WIDTH-1:0]  o_iru_pc     ,
 
-  // from csr_file:
-  input   logic [`DATA_WIDTH-1:0]  mie          ,
-  input   logic [`DATA_WIDTH-1:0]  mip          ,
-  input   logic [`DATA_WIDTH-1:0]  mtvec        ,  // ecall.
-  input   logic [`DATA_WIDTH-1:0]  mepc         ,  // mret.
-  input   logic [`DATA_WIDTH-1:0]  mstatus      ,  // ecall.
-
-  //preserve the scene
-  output  logic                    o_mepc_wen     ,  // ecall.
-  output  logic [`PC_WIDTH-1:0]  o_mepc_wdata   ,  // ecall.
-  output  logic                    o_mcause_wen   ,  // ecall.
-  output  logic [`DATA_WIDTH-1:0]  o_mcause_wdata ,  // ecall.
-  output  logic                    o_mstatus_wen  ,  // ecall.
-  output  logic [`DATA_WIDTH-1:0]  o_mstatus_wdata   // ecall.
+  // csr_file:
+  input   logic [`CPU_WIDTH-1:0]  i_mie          ,
+  input   logic [`CPU_WIDTH-1:0]  i_mip          ,
+  input   logic [`CPU_WIDTH-1:0]  i_mtvec        ,  // ecall.
+  input   logic [`CPU_WIDTH-1:0]  i_mepc         ,  // mret.
+  input   logic [`CPU_WIDTH-1:0]  i_mstatus      ,  // ecall.
+  output  logic                   o_mepc_wen     ,  // ecall.
+  output  logic [`CPU_WIDTH-1:0]  o_mepc_wdata   ,  // ecall.
+  output  logic                   o_mcause_wen   ,  // ecall.
+  output  logic [`CPU_WIDTH-1:0]  o_mcause_wdata ,  // ecall.
+  output  logic                   o_mstatus_wen  ,  // ecall.
+  output  logic [`CPU_WIDTH-1:0]  o_mstatus_wdata   // ecall.
 );
 
-  wire ecall = (wb_inst == `INST_WIDTH'h00000073);
-  wire mret  = (wb_inst == `INST_WIDTH'h30200073);
-  wire wbu_nop =  (wb_inst == `INST_WIDTH'h13);
-  // wb_valid & (!wbu_nop) is used for waitting next correct pc!
+  wire ecall = (i_wbu_ins == `INS_WIDTH'h00000073);
+  wire mret  = (i_wbu_ins == `INS_WIDTH'h30200073);
 
-  wire timer = wb_valid & (!wbu_nop) & mstatus[3] & mip[7] & mie[7]; // timer irq pending.
+  // i_wbu_valid & (!i_wbu_nop) is used for waitting next correct pc!
+  wire timer = i_wbu_valid & (!i_wbu_nop) & i_mip[`M_MIP_MTIP] & i_mstatus[`M_STATUS_MIE] & i_mie[`M_MIE_MTIE]; // timer irq pending.
 
   assign o_iru_excp = ecall | mret;  // exception.
   assign o_iru_intr = timer;         // interrupt.
 
-  //ecall/timer: expt trigger,jump to mtvec.
-  //mret:        expt return, next_pc = mepc.
-  assign o_iru_pc = (ecall | timer) ? mtvec : (mret ? mepc : `DATA_WIDTH'b0);
-//------------------------------------------------------------------------------
-//  CSR REGs protect(mstatus/mepc/mcause)
-//------------------------------------------------------------------------------
-  //1. mepc keep the PC before expt/intr trigger.
-  assign o_mepc_wen = wb_ready & (timer | ecall);
-  assign o_mepc_wdata = wb_pc;
-  //2. mcause keep the reason: 
-    //2.1 intr: now support timer
-    //2.2 expt: now support ecall(M-mode)
-  assign o_mcause_wen = wb_ready & (timer | ecall);
-  assign o_mcause_wdata = timer ? `IRQ_TIMER : (ecall ? `IRQ_ECALL : `DATA_WIDTH'b0);
-  //3. mstatus keep track the states of cpu. 
-  assign o_mstatus_wen = wb_ready & (o_iru_excp | o_iru_intr);//ecall/timer/mret
-    //3.1 ecall matstus
-  logic [`DATA_WIDTH-1:0] ecall_intr_mstatus_wdata;
-  assign ecall_intr_mstatus_wdata[63:13]          = mstatus[63:13];
-  assign ecall_intr_mstatus_wdata[12:11]          = 2'b11; 
-  assign ecall_intr_mstatus_wdata[10:8]           = mstatus[10:8];
-  assign ecall_intr_mstatus_wdata[7]              = mstatus[3]; 
-  assign ecall_intr_mstatus_wdata[6:4]            = mstatus[6:4]; 
-  assign ecall_intr_mstatus_wdata[3]              = 1'b0;//enter M-mode,MIE = 0
-  assign ecall_intr_mstatus_wdata[2:0]            = mstatus[2:0]; 
-    //3.2 mret matstus
-  logic [`DATA_WIDTH-1:0] mret_mstatus_wdata;
-  assign mret_mstatus_wdata[63:13]                = mstatus[63:13];
-  assign mret_mstatus_wdata[12:11]                = 2'b00; 
-  assign mret_mstatus_wdata[10:8]                 = mstatus[10:8];
-  assign mret_mstatus_wdata[7]                    = 1'b1; 
-  assign mret_mstatus_wdata[6:4]                  = mstatus[6:4]; 
-  assign mret_mstatus_wdata[3]                    = mstatus[7];//MIE = MPIE
-  assign mret_mstatus_wdata[2:0]                  = mstatus[2:0]; 
+  assign o_iru_pc = (ecall | timer) ? i_mtvec : (mret ? i_mepc : `CPU_WIDTH'b0);
+
+  assign o_mepc_wen = i_wbu_ready & (timer | ecall);
+  assign o_mepc_wdata = i_wbu_pc;
+
+  assign o_mcause_wen = i_wbu_ready & (timer | ecall);
+  assign o_mcause_wdata = timer ? `IRQ_TIMER : (ecall ? `IRQ_ECALL : `CPU_WIDTH'b0);
+
+  assign o_mstatus_wen = i_wbu_ready & (o_iru_excp | o_iru_intr);
+
+  logic [`CPU_WIDTH-1:0] ecall_intr_mstatus_wdata;
+  assign ecall_intr_mstatus_wdata[63:13]          = i_mstatus[63:13];
+  assign ecall_intr_mstatus_wdata[`M_STATUS_MPP]  = `M_MODE; 
+  assign ecall_intr_mstatus_wdata[10:8]           = i_mstatus[10:8];
+  assign ecall_intr_mstatus_wdata[`M_STATUS_MPIE] = i_mstatus[`M_STATUS_MIE]; 
+  assign ecall_intr_mstatus_wdata[6:4]            = i_mstatus[6:4]; 
+  assign ecall_intr_mstatus_wdata[`M_STATUS_MIE]  = 1'b0;
+  assign ecall_intr_mstatus_wdata[2:0]            = i_mstatus[2:0]; 
+
+  logic [`CPU_WIDTH-1:0] mret_mstatus_wdata;
+  assign mret_mstatus_wdata[63:13]          = i_mstatus[63:13];
+  assign mret_mstatus_wdata[`M_STATUS_MPP]  = 3'b0; 
+  assign mret_mstatus_wdata[10:8]           = i_mstatus[10:8];
+  assign mret_mstatus_wdata[`M_STATUS_MPIE] = 1'b1; 
+  assign mret_mstatus_wdata[6:4]            = i_mstatus[6:4]; 
+  assign mret_mstatus_wdata[`M_STATUS_MIE]  = i_mstatus[`M_STATUS_MPIE];
+  assign mret_mstatus_wdata[2:0]            = i_mstatus[2:0]; 
 
   assign o_mstatus_wdata =  o_iru_intr | ecall  ? ecall_intr_mstatus_wdata :
-                            (  mret    ? mret_mstatus_wdata  : `DATA_WIDTH'b0);
+                            (  mret    ? mret_mstatus_wdata  : `CPU_WIDTH'b0);
 
 endmodule
