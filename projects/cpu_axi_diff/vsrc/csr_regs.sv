@@ -10,13 +10,11 @@ module csr_regs(
     output logic     [`DATA_WIDTH-1:0]          id_csr_rdata,              // ib模块读寄存器数据
     input  logic     [`CSR_ADDR_WIDTH-1:0]      id_csr_raddr,               // ib模块读寄存器地址
     input  logic                                id_csr_ren,
-
+  input   logic mret,
 //From wb
     input  logic     [`DATA_WIDTH-1:0]          wb_csr_wdata,               // wb模块写寄存器数据
     input  logic     [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,               // wb模块写寄存器地址
     input  logic                                wb_csr_wen,                 // wb模块写寄存器标志
-
-
 //protected csr regfiles.
     input  logic                                mepc_wen      ,   // ecall / iru.
     input  logic     [`DATA_WIDTH-1:0]          mepc_wdata    ,   // ecall / iru.
@@ -37,11 +35,12 @@ module csr_regs(
     output logic     [`DATA_WIDTH-1:0]          s_mtvec         ,
     output logic     [`DATA_WIDTH-1:0]          s_mepc          ,
     output logic     [`DATA_WIDTH-1:0]          s_mstatus       ,
+    output logic     [`DATA_WIDTH-1:0]          s_sstatus       ,
     output logic     [`DATA_WIDTH-1:0]          s_mcause        ,
     output logic     [`DATA_WIDTH-1:0]          s_mcycle        ,
     output logic     [`DATA_WIDTH-1:0]          s_mie           ,
     output logic     [`DATA_WIDTH-1:0]          s_mip           ,
-    output logic     [`DATA_WIDTH-1:0]          s_mscratch           ,
+    output logic     [`DATA_WIDTH-1:0]          s_mscratch      ,
     
     output logic                                global_int_en                 // 全局中断使能标志
      
@@ -138,8 +137,11 @@ Reg #(
     .dout   (mtvec         )
   );
   // 3.4 mstatus: //////////////////////////////////////////////////////////////////////////
-  wire wen_mstatus = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MSTATUS)) | mstatus_wen;
-  wire [`DATA_WIDTH-1:0] wdata_mstatus = mstatus_wen ? mstatus_wdata : wb_csr_wdata;
+  wire wen_mstatus = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MSTATUS)) | mstatus_wen ;// mret recover mstatus
+  /* verilator lint_off UNOPTFLAT */
+  wire [`DATA_WIDTH-1:0] wdata_mstatus;
+  assign wdata_mstatus[62:0] = mstatus_wen ? mstatus_wdata[62:0]  : wb_csr_wdata[62:0];
+  assign wdata_mstatus[63]   = !((XS == 2'b00) && (FS == 2'b00) && (VS == 2'b00));
 
 Reg #(
     .WIDTH    (`DATA_WIDTH   ),
@@ -213,7 +215,16 @@ Reg #(
   assign s_mepc   = wen_mepc    ? wdata_mepc   : mepc    ;
   assign s_mcause = wen_mcause  ? wdata_mcause : mcause  ;
   assign s_mtvec  = wen_mtvec   ? wdata_mtvec  : mtvec   ;
-  assign s_mstatus= wen_mstatus ? wdata_mstatus: mstatus ;
+  wire [1:0] XS = wen_mstatus ? wdata_mstatus[16:15] : mstatus[16:15],
+             FS = wen_mstatus ? wdata_mstatus[14:13] : mstatus[14:13],
+             VS = wen_mstatus ? wdata_mstatus[10: 9] : mstatus[10: 9];
+  
+  assign s_mstatus[63] =  !((XS == 2'b00) && (FS == 2'b00) && (VS == 2'b00));
+  assign s_sstatus[63] =  !((XS == 2'b00) && (FS == 2'b00) && (VS == 2'b00));
+  assign s_sstatus[16:15] = XS;
+  assign s_sstatus[14:13] = FS;
+  assign s_sstatus[10: 9] = VS;
+  assign s_mstatus [62:0]= wen_mstatus ? wdata_mstatus[62:0]: mstatus[62:0];
   assign s_mcycle = wdata_mcycle;
   assign s_mie    = wen_mie     ? wdata_mie    : mie     ;
   assign s_mip    = wen_mip     ? wb_csr_wdata : mip     ; //{wb_csr_wdata[`DATA_WIDTH-1:8],mip[7],wb_csr_wdata[6:0]} : mip ;

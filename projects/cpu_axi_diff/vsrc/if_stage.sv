@@ -7,7 +7,7 @@ module if_stage(
 	  output if_valid,
 	  input  if_ready,
     input  [`AXI_DATA_WIDTH:0] if_data_read,
-    output logic [`AXI_ADDR_WIDTH:0] if_addr,
+    output logic [`AXI_ADDR_WIDTH-1:0] if_addr,
     output [1:0] if_size,
     input  [1:0] if_resp,
     output reg fetched,//for difftest
@@ -18,6 +18,8 @@ module if_stage(
     input  logic                    iru_excp   ,//ecall/mret
     input  logic                    iru_intr   ,//timer
     input  logic [`DATA_WIDTH-1:0]  iru_pc     ,
+//from iru
+    input logic mret,
 
 //for bpu
     input  logic   [`PC_WIDTH-1:0]     ex_pc,
@@ -57,23 +59,38 @@ Reg #(
 //fetch an instruction
 wire axi_if_handshake_done = if_valid & if_ready;
 reg [63:0] addr;
+//if mret, 
+//1.need to bubble the next inst use mret_cnt.
+//2.need to keep the mepc use mret_cnt until mret_cnt == 0.
+logic [1:0] mret_cnt;
 
 // fetch an instruction
+//1. mret/jump separare discuss because of the mret next pc update now,jump next_pc
 always @( posedge clk ) begin
   if (!rst_n) begin
     if_pc <= `PC_START;
     if_addr <= `PC_START;
     fetched <= 0;
+    mret_cnt <= 2'b00;
   end
-  
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && mret) begin
+    if_pc <= if_addr;
+    mret_cnt <= mret_cnt + 1;
+    fetched <= 1;
+  end
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !mret) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
-    //if_inst <= if_data_read[31:0];
+    mret_cnt <= 2'b00;
     fetched <= 1;
   end
   else begin
-    if_addr <= next_pc;
+    if(mret_cnt == 2'b00)begin
+      if_addr <= next_pc;
+    end
+    else begin
+      if_addr <= if_addr;
+    end
     //if_inst <= if_data_read[31:0];
     fetched <= 0;
   end
@@ -97,7 +114,7 @@ always @( posedge clk ) begin
   else if(jump_cnt == 1 && axi_if_handshake_done)begin
     jump_cnt <= 2'b0 ;
   end
-  else if(pc_add_imm_flag && axi_if_handshake_done)begin
+  else if((pc_add_imm_flag || mret) && axi_if_handshake_done)begin
     jump_cnt <= jump_cnt + 1;
   end
 end
@@ -114,6 +131,7 @@ bpu u_bpu(
     .ex_imm                            (ex_imm                    ),
     .ex_reg1_rdata                     (ex_reg1_rdata             ),
     .ex_jalr                           (ex_jalr                   ),
+    .mret(mret),
 
     .pc_add_imm_flag                   (pc_add_imm_flag           ),
     .bpu_pc_update                     (bpu_pc_update             ),
@@ -129,7 +147,7 @@ mux_pc u_mux_pc(
     .curr_pc_update                    (curr_pc_update            ) 
 );
 
-    wire                       pc_wen = ~bubble_id_ex && (ready_id2if && valid_if2id);//shake success and not insert bubble
+    wire                       pc_wen = /*~bubble_id_ex &&*/ (ready_id2if && valid_if2id);//shake success and not insert bubble
     logic        [`PC_WIDTH-1:0]             next_pc_r;  // current pc addr
 pc_update u0_pc_update(
     .clk                               (clk                       ),// system clock

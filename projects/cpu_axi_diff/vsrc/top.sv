@@ -50,6 +50,9 @@ module top (
     //for clint
     logic                         clint_ren   , clint_wen  , clint_mtip ;
     logic      [`DATA_WIDTH-1:0]  clint_raddr , clint_waddr, clint_rdata, clint_wdata;
+
+    logic axi_trans_done;
+    assign axi_trans_done = (if_valid & if_ready | !if_valid) & (mem_valid & mem_ready | !mem_valid);
 //------------------------------------------------------------------------------
 //  1.IF STAGE
 //------------------------------------------------------------------------------
@@ -75,6 +78,8 @@ if_stage u_if_stage(
     .iru_excp                          (iru_excp                  ),
     .iru_intr                          (iru_intr                  ),
     .iru_pc                            (iru_pc                    ),
+
+    .mret                              (mret                      ),
     //.curr_pc                           (curr_pc                   ),
     .ex_pc                             (ex_pc                     ),
     .ex_branch                         (ex_branch                 ),
@@ -170,6 +175,8 @@ id_stage u_id_stage(
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_lden(ex_lsu_lden),
+
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),
@@ -180,6 +187,7 @@ id_stage u_id_stage(
     .mem_grant                         (grant                     ),
     .ex_alu_res                        (ex_alu_res                ),
     .mem_regld                         (mem_regld                 ),
+    .mem_lsu_lden(mem_lsu_lden),
 
     .if_inst                           (if_inst                   ),
     .if_pc                             (if_pc                     ),
@@ -279,6 +287,8 @@ ex_stage u_ex_stage(
     .ex_inst                           (ex_inst                   ),
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_reg_waddr                      (ex_reg_waddr              ),
+    .ex_reg1_raddr                     (ex_reg1_raddr),
+    .ex_reg2_raddr                     (ex_reg2_raddr),
     .ex_alu_res                        (ex_alu_res                ),
     .ex_regst                          (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
@@ -372,7 +382,7 @@ mem_stage u_mem_stage(
     logic wbu_valid_o_next;
     logic wbu_ready;
     logic wb_clint_ldst;
-    assign wbu_ready = (iru_excp | iru_intr) ? 0 : 1;
+    assign wbu_ready = (iru_excp | iru_intr) ? axi_trans_done : 1;
 
 wb_stage u_wb_stage(
     .clk                               (clk                       ),
@@ -428,7 +438,7 @@ wb_stage u_wb_stage(
   logic                                  iru_excp;
   logic                                  iru_intr;
   logic [`DATA_WIDTH-1:0]                iru_pc     ;
-  
+  logic                     mret;
 iru u_iru(
     .wb_valid                          (wbu_valid_o_next          ),
     .wb_ready                          (wbu_ready                 ),
@@ -439,6 +449,7 @@ iru u_iru(
     .o_iru_excp                        (iru_excp                  ),
     .o_iru_intr                        (iru_intr                  ),
     .o_iru_pc                          (iru_pc                    ),///
+    .mret                              (mret                      ),
 
     .mie                               (mie                       ),
     .mip                               (mip                       ),
@@ -473,6 +484,7 @@ clint u_clint(
 
     logic     [`DATA_WIDTH-1:0]          s_mtvec         ;
     logic     [`DATA_WIDTH-1:0]          s_mstatus       ;
+    logic     [`DATA_WIDTH-1:0]          s_sstatus       ;
     logic     [`DATA_WIDTH-1:0]          s_mepc          ;
     logic     [`DATA_WIDTH-1:0]          s_mcause        ;
     logic     [`DATA_WIDTH-1:0]          s_mcycle        ;
@@ -483,6 +495,7 @@ csr_regs u_csr_regs(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     
+    .mret(mret),
     .id_csr_rdata                      (id_csr_rdata              ),
     .id_csr_raddr                      (id_csr_raddr              ),
     .id_csr_ren                        (id_csr_ren                ),
@@ -510,6 +523,7 @@ csr_regs u_csr_regs(
     .s_mtvec                           (s_mtvec                   ),
     .s_mepc                            (s_mepc                    ),
     .s_mstatus                         (s_mstatus                 ),
+    .s_sstatus                         (s_sstatus                 ),
     .s_mcause                          (s_mcause                  ),
     .s_mcycle                          (s_mcycle                  ),
     .s_mie                             (s_mie                     ),
@@ -534,7 +548,8 @@ csr_regs u_csr_regs(
     reg     [  63:0]         instrCnt                   ;
     reg     [`REG_BUS]       regs_diff_npc [0:31]       ;
     reg     [`DATA_WIDTH-1:0]cmt_intrNO                 ;
-    wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next;
+    wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next && wbu_ready
+                                        && (wb_diff_pc != cmt_wb_diff_pc);//一条指令不能提交两遍
 
   assign s_uart_out_valid = real_cmt & (cmt_inst == `DATA_WIDTH'h7b);
   assign s_uart_out_char = regs[10][7:0];
@@ -550,13 +565,13 @@ csr_regs u_csr_regs(
 //    $monitor("cmt_wdest is %h",cmt_wdest);
 //    $monitor("cmt_wdata is %h",cmt_wdata);
 //end
-logic real_clk;
+logic [`PC_WIDTH-1:0] cmt_wb_diff_pc;
 always @(posedge clk) begin
   if (!rst_n) begin
-    real_clk <= 0;
   end
-  else
-    real_clk <= ~real_clk;
+  else if(cmt_valid)begin
+    cmt_wb_diff_pc <= wb_diff_pc;
+  end
 end
 
 always @(negedge clk) begin
@@ -648,7 +663,7 @@ DifftestCSRState DifftestCSRState(
     .coreid                            (0                         ),
     .priviledgeMode                    (`RISCV_PRIV_MODE_M        ),
     .mstatus                           (s_mstatus                 ),
-    .sstatus                           (0                         ),
+    .sstatus                           (s_sstatus                 ),
     .mepc                              (s_mepc                    ),
     .sepc                              (0                         ),
     .mtval                             (0                         ),

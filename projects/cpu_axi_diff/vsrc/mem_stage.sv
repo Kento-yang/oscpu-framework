@@ -33,10 +33,10 @@ module mem_stage(
     output      [`REG_ADDR_WIDTH-1:0]   mem_reg_waddr              ,// register write address
     output      [`DATA_WIDTH-1:0]       mem_alu_res                ,
     output      [`LSU_OPT_WIDTH-1:0]    mem_lsu_opt                ,
-    output                              mem_lsu_lden,
-    output                              mem_lsu_sten,
+    output                              mem_lsu_lden               ,
+    output                              mem_lsu_sten               ,
     output      [`PC_WIDTH-1:0]         mem_diff_pc                ,
-    output logic     [`DATA_WIDTH-1:0]       mem_regld                  ,
+    output logic     [`DATA_WIDTH-1:0]  mem_regld                  ,
     //output                              mem_hold, //to WBU, stall the pipeline
     output logic lsu_valid,
 //CSR

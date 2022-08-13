@@ -30,6 +30,8 @@ module id_ex (
   input   [`CSR_IMM_WIDTH-1:0]       id_csr_zimm,
   input                              id_csr_wen,
 
+  output logic           [`PC_WIDTH-1:0]             tem_diff_pc,
+
   output logic     [`INST_WIDTH-1:0]          ex_inst   ,
   output logic     [`PC_WIDTH-1:0]            ex_pc   ,
   output logic                                ex_branch   ,
@@ -73,7 +75,7 @@ module id_ex (
   logic     [`LSU_OPT_WIDTH-1 : 0]     tem_lsu_opt;
   logic                                 tem_lsu_lden;
   logic                                 tem_lsu_sten;
-  logic           [`PC_WIDTH-1:0]             tem_diff_pc; 
+  
   
   logic   [`DATA_WIDTH - 1:0]        tem_csr_rdata;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;

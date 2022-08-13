@@ -113,6 +113,7 @@ always_comb begin
 end
 //for valid
 logic div_valid_o_next;
+
 always_comb begin
     alu_valid_o_next = 1'b1;
     case (alu_op)

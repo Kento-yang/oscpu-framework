@@ -45,6 +45,8 @@ module ex_stage(
     output             [`INST_WIDTH-1:0]           ex_inst   ,
     output                                       ex_reg_wen,
     output             [`REG_ADDR_WIDTH-1 : 0]   ex_reg_waddr,  // register write address
+    output    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr,
+    output    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr,
     output             [`DATA_WIDTH-1:0]         ex_alu_res    ,
     output             [`DATA_WIDTH-1:0]          ex_regst     ,//ex_reg2_rdata
     output             [`LSU_OPT_WIDTH-1 : 0]    ex_lsu_opt    ,
@@ -69,10 +71,11 @@ module ex_stage(
 //  ID-EX REG  
 //------------------------------------------------------------------------------
     logic                               pipe_wen;
-    assign pipe_wen =  valid_id2ex && ready_ex2id;//shake success with id_stage
+    logic           [`PC_WIDTH-1:0]             tem_diff_pc;
+    //(tem_diff_pc != ex_diff_pc)只有指令不一样的时候才能使能打拍，避免相同指令源寄存器到目标寄存器之间形成环。(rtthread 0x80004860 subw	a5,a6,a5)
+    assign pipe_wen =  valid_id2ex && ready_ex2id && (tem_diff_pc != ex_diff_pc);//shake success with id_stage
 
-    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
-    logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
+
     
     logic   [`DATA_WIDTH-1:0]   ex_reg2_rdata;
     logic   [`ALU_OP_WIDTH-1 : 0]      ex_alu_op;
@@ -111,6 +114,8 @@ id_ex u_id_ex(
     .id_csr_waddr                      (id_csr_waddr              ),
     .id_csr_zimm                       (id_csr_zimm              ),
     .id_csr_wen                        (id_csr_wen                ),
+
+    .tem_diff_pc                       (tem_diff_pc               ),
 
     .ex_inst                           (ex_inst                   ),
     .ex_pc                             (ex_pc                     ),

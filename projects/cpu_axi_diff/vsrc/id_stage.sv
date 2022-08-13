@@ -23,6 +23,7 @@ module id_stage(
     input logic                              ex_reg_wen,
     input logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
     input logic            [`PC_WIDTH-1:0]      ex_diff_pc,//for ld-add adventure use
+    input logic                                 ex_lsu_lden,
 //from ex_mem   
     input logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,              // register write address   
     input logic                                mem_reg_wen,
@@ -32,6 +33,7 @@ module id_stage(
     input logic                                mem_ready,
     input logic                                mem_req,
     input logic                                mem_grant,
+    input logic                                mem_lsu_lden,
 //from alu
     input logic    [`DATA_WIDTH-1:0]           ex_alu_res,
 //from mem lsu
@@ -97,7 +99,7 @@ module id_stage(
     //logic pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
 
     logic pipe_wen;
-    assign pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;
+    assign pipe_wen = /*~bubble_id_ex &&*/ valid_if2id && ready_id2if ;
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
@@ -227,8 +229,8 @@ data_bypass u1_data_bypass(
     .sten_ex                           (ex_lsu_opt                ),//ex阶段st指令
     .sten_mem                          (mem_lsu_opt               ),//mem阶段st指令
     .lden_id                           (id_lsu_lden),
-    .lden_ex                           (~ex_lsu_opt[0]            ),
-    .lden_mem                          (~mem_lsu_opt[0]           ),//mem阶段ld指令
+    .lden_ex                           (ex_lsu_lden            ),
+    .lden_mem                          (mem_lsu_lden          ),//mem阶段ld指令
     
     .bubble_id_ex                      (bubble_id_ex              ),
 

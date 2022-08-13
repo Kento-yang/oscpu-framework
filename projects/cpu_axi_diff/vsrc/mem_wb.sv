@@ -49,8 +49,8 @@ module mem_wb (
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
   logic                              tem_csr_wen;
 
- assign tem_inst = mem_inst;
-  assign tem_reg_wen = mem_reg_wen;
+  assign tem_inst = mem_inst;
+  assign tem_reg_wen = mem_reg_wen;//inst相同只写回一次，避免一条指令执行多遍形成回环。。
   assign tem_reg_waddr = mem_reg_waddr;
   assign tem_regld = mem_regld;
   assign tem_alu_res = mem_alu_res;

@@ -13,7 +13,7 @@ module iru (
   output  logic                    o_iru_excp   ,//ecall/mret
   output  logic                    o_iru_intr   ,//timer
   output  logic [`DATA_WIDTH-1:0]  o_iru_pc     ,
-
+  output  logic                    mret,
   // from csr_file:
   input   logic [`DATA_WIDTH-1:0]  mie          ,
   input   logic [`DATA_WIDTH-1:0]  mip          ,
@@ -23,15 +23,15 @@ module iru (
 
   //preserve the scene
   output  logic                    o_mepc_wen     ,  // ecall.
-  output  logic [`PC_WIDTH-1:0]  o_mepc_wdata   ,  // ecall.
+  output  logic [`PC_WIDTH-1:0]    o_mepc_wdata   ,  // ecall.
   output  logic                    o_mcause_wen   ,  // ecall.
   output  logic [`DATA_WIDTH-1:0]  o_mcause_wdata ,  // ecall.
   output  logic                    o_mstatus_wen  ,  // ecall.
-  output  logic [`DATA_WIDTH-1:0]  o_mstatus_wdata   // ecall.
+  output  logic [`DATA_WIDTH-1:0]  o_mstatus_wdata   // ecall.mret
 );
 
   wire ecall = (wb_inst == `INST_WIDTH'h00000073);
-  wire mret  = (wb_inst == `INST_WIDTH'h30200073);
+  assign mret  = (wb_inst == `INST_WIDTH'h30200073);
   wire wbu_nop =  (wb_inst == `INST_WIDTH'h13);
   // wb_valid & (!wbu_nop) is used for waitting next correct pc!
 

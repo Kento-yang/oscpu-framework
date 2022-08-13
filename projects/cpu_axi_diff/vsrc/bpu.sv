@@ -7,6 +7,7 @@ module bpu (
     input           [`DATA_WIDTH-1:0]   ex_imm,     // immediate  
     input           [`DATA_WIDTH-1:0]   ex_reg1_rdata,     // rs1    ex_jalr:rs1+ex_imm
     input                               ex_jalr,
+    input                               mret,
 
     output logic                        pc_add_imm_flag,
     output logic    [`PC_WIDTH-1:0]     bpu_pc_update,
@@ -17,6 +18,6 @@ assign pc_add_imm_flag = ((ex_branch && ~ex_zero) || ex_jump )? 1 : 0;//bne or e
 
 assign bpu_pc_update =  ex_jalr ? ((ex_reg1_rdata + ex_imm) &(~1)): (ex_pc + ex_imm);
 
-assign bubble = pc_add_imm_flag;//if ex_jump/ex_branch make nop for if_id and id_ex
+assign bubble = pc_add_imm_flag || mret;//if ex_jump/ex_branch make nop for if_id and id_ex
 
 endmodule
