@@ -9,6 +9,7 @@ module id_stage(
     input logic                       bpu_bubble,
 //from wbu
     input logic                              wb_reg_wen,//from mem_wb
+    input logic                              real_cmt,
     input logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr, 
     input logic   [`DATA_WIDTH-1:0]          wb_reg_wdata,
 //csr_regfiles 
@@ -161,7 +162,8 @@ imm_gen u1_imm_gen(
 reg_file u1_reg_file(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
-    .reg_wen                           (wb_reg_wen                ),//from wbu write wen
+    .reg_wen                           (wb_reg_wen                 ),//from wbu write wen
+    .real_cmt(real_cmt),
     .reg_waddr                         (wb_reg_waddr              ),//from wbu write addr
     .reg_wdata                         (wb_reg_wdata              ),//from wbu write data
     .reg1_raddr                        (id_reg1_raddr             ),

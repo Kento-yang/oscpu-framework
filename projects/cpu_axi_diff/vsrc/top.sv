@@ -164,6 +164,7 @@ id_stage u_id_stage(
     //.bubble                            (bubble                    ),
     .bpu_bubble                        (bpu_bubble                ),
     .wb_reg_wen                        (wb_reg_wen                ),
+    .real_cmt(real_cmt),
     .wb_reg_waddr                      (wb_reg_waddr              ),
     .wb_reg_wdata                      (wb_reg_wdata              ),
 
@@ -512,7 +513,7 @@ csr_regs u_csr_regs(
 
     .wb_csr_wdata                      (wb_csr_wdata              ),
     .wb_csr_waddr                      (wb_csr_waddr              ),
-    .wb_csr_wen                        (wb_csr_wen && real_cmt    ),
+    .wb_csr_wen                        (wb_csr_wen    ),
 
     .mepc_wen                          (mepc_wen                  ),
     .mepc_wdata                        (mepc_wdata                ),

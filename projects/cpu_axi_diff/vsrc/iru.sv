@@ -36,7 +36,7 @@ module iru (
   wire wbu_nop =  (wb_inst == `INST_WIDTH'h13);
   // wb_valid & (!wbu_nop) is used for waitting next correct pc!
 
-  wire timer = wb_valid  & (!wbu_nop) & mstatus[3] & mip[7] & mie[7]; // timer irq pending.
+  wire timer = wb_valid  & (!wbu_nop) & mstatus[3] & i_clint_mtip & mie[7]; // timer irq pending. i_clint_mtip can not be mip[7],make difftest pass
 
   assign o_iru_excp = ecall | mret;  // exception.
   assign o_iru_intr = timer;         // interrupt.

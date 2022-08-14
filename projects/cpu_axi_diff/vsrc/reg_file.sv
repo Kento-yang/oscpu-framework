@@ -4,6 +4,7 @@ module reg_file (
     input                                 clk,
     input                                 rst_n,
     input                                 reg_wen,
+    input                                 real_cmt,
     input       [`DATA_WIDTH-1:0]         reg_wdata,
     input       [`REG_ADDR_WIDTH-1:0]     reg_waddr,
 
@@ -28,7 +29,7 @@ module reg_file (
     always @(posedge clk or negedge rst_n) begin
         if(!rst_n)
             reg_f[reg_waddr] <= 0;
-        else if (reg_wen && (reg_waddr != `REG_ADDR_WIDTH'b0)) //reg0 == 0 forever
+        else if (reg_wen && real_cmt &&(reg_waddr != `REG_ADDR_WIDTH'b0)) //reg0 == 0 forever
             reg_f[reg_waddr] <= reg_wdata;
     end
 
@@ -56,7 +57,7 @@ module reg_file (
     genvar i;
 	generate
 		for (i = 0; i < 32; i = i + 1) begin
-			assign regs_o[i] = (reg_wen & reg_waddr == i & i != 0) ? reg_wdata : reg_f[i];
+			assign regs_o[i] = (reg_wen & real_cmt & reg_waddr == i & i != 0) ? reg_wdata : reg_f[i];
 		end
 	endgenerate
 
