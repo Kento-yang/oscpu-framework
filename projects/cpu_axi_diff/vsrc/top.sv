@@ -51,8 +51,9 @@ module top (
     logic                         clint_ren   , clint_wen  , clint_mtip ;
     logic      [`DATA_WIDTH-1:0]  clint_raddr , clint_waddr, clint_rdata, clint_wdata;
 
-    logic axi_trans_done;
-    assign axi_trans_done = (if_valid & if_ready | !if_valid) & (mem_valid & mem_ready | !mem_valid);
+    logic axi_trans_done,flush;
+    assign axi_trans_done = ( mem_ready | !mem_valid) & (if_ready | !if_valid) ;
+    assign flush     = (iru_excp | iru_intr) & (wbu_valid_o_next & wbu_ready);       // iru_intr not commit.
 //------------------------------------------------------------------------------
 //  1.IF STAGE
 //------------------------------------------------------------------------------
@@ -66,6 +67,7 @@ module top (
 if_stage u_if_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ), 
 
     .if_valid                          (if_valid                  ),
     .if_ready                          (if_ready                  ),
@@ -76,7 +78,7 @@ if_stage u_if_stage(
     .fetched                           (fetched                   ),
 
     .iru_excp                          (iru_excp                  ),
-    .iru_intr                          (iru_intr                  ),
+    .iru_intr                          (iru_intr                    ),
     .iru_pc                            (iru_pc                    ),
 
     .mret                              (mret                      ),
@@ -157,6 +159,7 @@ wire                   [`REG_BUS] regs[0 : 31]                           ;//for 
 id_stage u_id_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
     //.pipe_wen                          (pipe_wen_id                  ),
     //.bubble                            (bubble                    ),
     .bpu_bubble                        (bpu_bubble                ),
@@ -248,6 +251,8 @@ id_stage u_id_stage(
 ex_stage u_ex_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
+
     .bpu_bubble                        (bpu_bubble                ),
     .bubble_id_ex                      (bubble_id_ex              ),
     .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
@@ -321,6 +326,8 @@ ex_stage u_ex_stage(
 mem_stage u_mem_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
+
     .ex_inst                           (ex_inst                   ),
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_reg_waddr                      (ex_reg_waddr              ),
@@ -382,11 +389,13 @@ mem_stage u_mem_stage(
     logic wbu_valid_o_next;
     logic wbu_ready;
     logic wb_clint_ldst;
-    assign wbu_ready = (iru_excp | iru_intr) ? axi_trans_done : 1;
+    assign wbu_ready = (iru_excp | iru_intr) ? (mem_lsu_lden | mem_lsu_sten) ? ( mem_ready | !mem_valid): axi_trans_done : 1;
 
 wb_stage u_wb_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
+
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_reg_waddr                     (mem_reg_waddr             ),
@@ -445,6 +454,7 @@ iru u_iru(
     //.wbu_nop          ( wbu_nop          ),
     .wb_inst                           (wb_inst                   ),
     .wb_pc                             (wb_diff_pc                ),
+    .i_clint_mtip                      (clint_mtip                ),
 
     .o_iru_excp                        (iru_excp                  ),
     .o_iru_intr                        (iru_intr                  ),
@@ -502,7 +512,7 @@ csr_regs u_csr_regs(
 
     .wb_csr_wdata                      (wb_csr_wdata              ),
     .wb_csr_waddr                      (wb_csr_waddr              ),
-    .wb_csr_wen                        (wb_csr_wen                ),
+    .wb_csr_wen                        (wb_csr_wen && real_cmt    ),
 
     .mepc_wen                          (mepc_wen                  ),
     .mepc_wdata                        (mepc_wdata                ),
@@ -549,7 +559,7 @@ csr_regs u_csr_regs(
     reg     [`REG_BUS]       regs_diff_npc [0:31]       ;
     reg     [`DATA_WIDTH-1:0]cmt_intrNO                 ;
     wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next && wbu_ready
-                                        && (wb_diff_pc != cmt_wb_diff_pc);//一条指令不能提交两遍
+                                        && (wb_diff_pc != cmt_wb_diff_pc) && !iru_intr;//一条指令不能提交两遍
 
   assign s_uart_out_valid = real_cmt & (cmt_inst == `DATA_WIDTH'h7b);
   assign s_uart_out_char = regs[10][7:0];
@@ -670,10 +680,10 @@ DifftestCSRState DifftestCSRState(
     .stval                             (0                         ),
     .mtvec                             (s_mtvec                   ),
     .stvec                             (0                         ),
-    .mcause                            (0                         ),
-    .scause                            (s_mcause                  ),
+    .mcause                            (s_mcause                         ),
+    .scause                            (0                  ),
     .satp                              (0                         ),
-    .mip                               (0                         ),//
+    .mip                               (0                         ),//s_mip
     .mie                               (s_mie                     ),//s_mie，挂起中断会报错，定位difftest有问题
     .mscratch                          (s_mscratch                ),
     .sscratch                          (0                         ),

@@ -2,9 +2,12 @@
 module id_ex (
   input                                       clk       ,
   input                                       rst_n     ,
+  input logic                         flush,
+
   input                                       pipe_wen       ,
   input                                       bpu_bubble,
   input                                       bypass_bubble,
+
 
   input            [`INST_WIDTH-1:0]          id_inst   ,
   input            [`PC_WIDTH-1:0]            id_pc   ,
@@ -118,8 +121,8 @@ Reg #(
   ) if_id_reg(
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
-    .wen      (pipe_wen                ),
-    .din      ({tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
+    .wen      (flush |pipe_wen                ),
+    .din      (flush ? 0 :{tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
               tem_reg_wen, tem_reg_waddr, tem_reg1_raddr, tem_reg2_raddr, tem_reg1_rdata, tem_reg2_rdata, tem_imm,
               tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,tem_diff_pc,
               tem_csr_rdata, tem_csr_waddr, tem_csr_zimm, tem_csr_wen}),

@@ -4,6 +4,7 @@ module if_id (
   input                                     rst_n    ,
   input                                     pipe_wen ,
   input                                     bubble,
+  input logic                         flush,
 
   input         [`INST_WIDTH-1:0]           if_inst  ,
   input         [`PC_WIDTH-1:0]             if_pc    ,
@@ -30,8 +31,8 @@ module if_id (
   ) if_id_reg(
   	.clk      (clk                 ),
     .rst_n    (rst_n               ),
-    .wen      (pipe_wen            ),
-    .din      ({tem_inst,  tem_pc ,tem_diff_pc }),
+    .wen      (flush|pipe_wen            ),
+    .din      (flush ? 0 :{tem_inst,  tem_pc ,tem_diff_pc }),
     .dout     ({id_inst,  id_pc ,id_diff_pc })
   );
   

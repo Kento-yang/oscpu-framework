@@ -2,6 +2,7 @@
 module wb_stage(
     input                                     clk      ,
     input                                     rst_n    ,
+    input logic                         flush,
 
     input            [`INST_WIDTH-1:0]           mem_inst   ,
     input                                     mem_reg_wen,
@@ -53,6 +54,7 @@ module wb_stage(
 mem_wb u_mem_wb(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen                  ),
 
     .mem_inst                          (mem_inst                  ),
@@ -94,7 +96,7 @@ wbu u0_wbu(
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( valid_mem2wb  ),
+    .valid_pre_i  ( flush? 0:valid_mem2wb  ),
     .ready_next_i ( ready_next_i ),
     .valid_o_next ( valid_o_next ),
     .ready_o_pre  ( ready_wb2mem  )

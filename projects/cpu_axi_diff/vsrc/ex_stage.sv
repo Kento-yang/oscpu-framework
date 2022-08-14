@@ -3,6 +3,7 @@
 module ex_stage(
     input                                     clk      ,
     input                                     rst_n    ,
+    input logic                         flush,
 //from bpu
     input logic                                 bpu_bubble,
 //from id data_bypass
@@ -87,6 +88,7 @@ module ex_stage(
 id_ex u_id_ex(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen                  ),
     .bpu_bubble                        (bpu_bubble                    ),
     .bypass_bubble                     (bubble_id_ex              ),

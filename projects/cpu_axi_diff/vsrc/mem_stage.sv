@@ -2,6 +2,7 @@
 module mem_stage(
     input                               clk                        ,
     input                               rst_n                      ,
+    input logic                         flush,
 //from exe stage
     input       [`INST_WIDTH-1:0]       ex_inst                    ,
     input                               ex_reg_wen                 ,
@@ -73,6 +74,7 @@ module mem_stage(
 ex_mem u_ex_mem(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen                  ),
     
     .ex_inst                           (ex_inst                   ),
@@ -214,7 +216,7 @@ ex_mem u_ex_mem(
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( valid_ex2mem  ),
+    .valid_pre_i  ( flush? 0:valid_ex2mem  ),
     .ready_next_i ( ready_wb2mem ),
     .valid_o_next ( valid_mem2wb_r ),
     .ready_o_pre  ( ready_mem2ex_r  )

@@ -184,7 +184,7 @@ Reg #(
     .dout   (mie         )
   );
   // 3.7 mip: //////////////////////////////////////////////////////////////////////////
-  assign mip[7] = 0;//i_clint_mtip;//mip include pending interrupts, MTIP = mip[7] 
+  assign mip[7] = i_clint_mtip;//mip include pending interrupts, MTIP = mip[7] 
   wire [`DATA_WIDTH-1:0] wdata_mip = wb_csr_wdata;
   wire wen_mip = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MIP )) ;
   Reg #(
@@ -195,7 +195,7 @@ Reg #(
     .rst_n  (rst_n      ),
     .wen    (wen_mip      ),
     .din    ({wdata_mip[`DATA_WIDTH-1:8], wdata_mip[6:0]}),
-    .dout   ({         mip[`DATA_WIDTH-1:8],          mip[6:0]})
+    .dout   ({      mip[`DATA_WIDTH-1:8],          mip[6:0]})
   );
   // 3.8 mscratch: //////////////////////////////////////////////////////////////////////////
   wire wen_mscratch = (wb_csr_wen & (wb_csr_waddr == `ADDR_CSR_MSCRATCH )) ;

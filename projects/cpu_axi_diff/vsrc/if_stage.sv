@@ -2,6 +2,7 @@
 module if_stage(
     input                               clk,
     input                               rst_n,
+    input logic                         flush,
 //interface for oscpu
 
 	  output if_valid,
@@ -73,12 +74,12 @@ always @( posedge clk ) begin
     fetched <= 0;
     mret_cnt <= 2'b00;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && mret) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && (iru_excp || iru_intr)) begin
     if_pc <= if_addr;
     mret_cnt <= mret_cnt + 1;
     fetched <= 1;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !mret) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !(iru_excp || iru_intr)) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
     mret_cnt <= 2'b00;
@@ -96,7 +97,7 @@ always @( posedge clk ) begin
   end
 end
 //assign if_addr = (!rst_n) ? `PC_START : next_pc;//update inst from if_addr need sync with if_pc
-assign if_valid = 1'b1;
+assign if_valid = 1 ;
 assign if_size = `SIZE_W;
 
     //assign if_pc = curr_pc ;
@@ -114,10 +115,11 @@ always @( posedge clk ) begin
   else if(jump_cnt == 1 && axi_if_handshake_done)begin
     jump_cnt <= 2'b0 ;
   end
-  else if((pc_add_imm_flag || mret) && axi_if_handshake_done)begin
+  else if((pc_add_imm_flag || iru_excp || iru_intr ) && axi_if_handshake_done )begin
     jump_cnt <= jump_cnt + 1;
   end
 end
+
 //------------------------------------------------------------------------------
 //  1.IF 
 //------------------------------------------------------------------------------
@@ -131,7 +133,8 @@ bpu u_bpu(
     .ex_imm                            (ex_imm                    ),
     .ex_reg1_rdata                     (ex_reg1_rdata             ),
     .ex_jalr                           (ex_jalr                   ),
-    .mret(mret),
+    .iru_excp(iru_excp),
+    .flush(flush),
 
     .pc_add_imm_flag                   (pc_add_imm_flag           ),
     .bpu_pc_update                     (bpu_pc_update             ),
@@ -155,10 +158,21 @@ pc_update u0_pc_update(
     .pc_wen                            (pc_wen                    ),// system enable
     .curr_pc_update                    (curr_pc_update            ),// current pc addr
 
-    .next_pc                           (next_pc_r                   ) // used for DPIC INST Fetch
+    .next_pc                           (next_pc_r                   ) // used for  INST Fetch
 );
 
 assign next_pc = (iru_excp | iru_intr) ? iru_pc : next_pc_r;
+
+logic wait_post_ready;
+always @(posedge clk or negedge rst_n) begin
+  if(!rst_n)begin
+    wait_post_ready <= 1'b0;
+  end else if(!pc_wen | axi_if_handshake_done)begin
+    wait_post_ready <= 1'b1;
+  end else if(pc_wen)begin
+    wait_post_ready <= 1'b0;
+  end
+end
 //------------------------------------------------------------------------------
 //  IF-ID HANDSHAKE 
 //------------------------------------------------------------------------------
@@ -168,7 +182,7 @@ assign valid_if2id = valid_o_next_r && fetched;
 pipehandshake u_if_id_handshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
-    .valid_pre_i  ( 1  ),//for valid_if2id
+    .valid_pre_i  ( flush ? 0 : 1  ),//for valid_if2id
     .ready_next_i ( ready_id2if ),
 
     .valid_o_next ( valid_o_next_r ),

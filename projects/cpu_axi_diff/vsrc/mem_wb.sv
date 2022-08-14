@@ -4,6 +4,7 @@
 module mem_wb (
   input                                     clk       ,
   input                                     rst_n     ,
+  input logic                         flush,
   input                                     pipe_wen ,
 
   input            [`INST_WIDTH-1:0]           mem_inst   ,
@@ -66,8 +67,8 @@ module mem_wb (
   ) if_id_reg(
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
-    .wen      (pipe_wen                ),
-    .din      ({tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
+    .wen      (flush | pipe_wen                ),
+    .din      (flush ? 0 : {tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
                 mem_clint_ldst,tem_csr_wdata, tem_csr_waddr, tem_csr_wen}),
     .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
                 wb_clint_ldst,wb_csr_wdata, wb_csr_waddr, wb_csr_wen})

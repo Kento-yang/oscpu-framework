@@ -2,7 +2,7 @@
 module id_stage(
     input                                     clk      ,
     input                                     rst_n    ,
-
+    input logic                         flush,
     //input                                     pipe_wen ,
     //input                                     bubble,
 //from IF bpu
@@ -103,6 +103,7 @@ module id_stage(
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen),//if bypass bubble,if_id pipe stall
     .bubble                            (bpu_bubble                ),//from bpu
 
@@ -277,7 +278,7 @@ pipehandshake u1_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
 
-    .valid_pre_i  ( valid_if2id  ),
+    .valid_pre_i  ( flush? 0:valid_if2id  ),
     .ready_next_i ( ready_ex2id ),
 
     .valid_o_next ( valid_id2ex_r ),
