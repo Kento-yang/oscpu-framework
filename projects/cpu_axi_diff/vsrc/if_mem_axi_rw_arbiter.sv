@@ -21,7 +21,7 @@ module if_mem_axi_rw_arbiter(
     output             [   1:0]         mem_resp                   ,
     input              [   7:0]         mem_wmask                  ,
 //output
-    output    logic grant,    
+    output    logic                     grant,    
     output                              rw_valid_i                 ,
     input                               rw_ready_o                 ,
     output                              rw_req_i                   ,
@@ -35,8 +35,8 @@ module if_mem_axi_rw_arbiter(
 //------------------------------------------------------------------------------
 //  IF-MEM Arbiter
 //------------------------------------------------------------------------------
-    localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;
- 
+    localparam MASTER_0 = 1'b0, MASTER_1 = 1'b1;//IF = MASTER0,MEM = MASTER1
+    
     always @(posedge clk) begin
         if(!reset_n)
             grant <= MASTER_0;
