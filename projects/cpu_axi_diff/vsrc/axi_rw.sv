@@ -49,7 +49,7 @@
 `define AXI_SIZE_BYTES_128                                  3'b111
 
 module axi_rw # (
-    parameter RW_DATA_WIDTH     = 64,
+    parameter RW_DATA_WIDTH     = 128,
     parameter RW_ADDR_WIDTH     = 64,
     parameter AXI_DATA_WIDTH    = 64,
     parameter AXI_ADDR_WIDTH    = 64,
@@ -62,9 +62,9 @@ module axi_rw # (
 	input                               rw_valid_i,
 	output logic                        rw_ready_o,
     input                               rw_req_i,
-    output logic [RW_DATA_WIDTH:0]        data_read_o,
-    input  [RW_DATA_WIDTH:0]            data_write_i,
-    input  [AXI_DATA_WIDTH:0]           rw_addr_i,
+    output logic [RW_DATA_WIDTH-1:0]      data_read_o,
+    input  [RW_DATA_WIDTH-1:0]            data_write_i,
+    input  [RW_ADDR_WIDTH-1:0]            rw_addr_i,
     input  [1:0]                        rw_size_i,
     output logic [1:0]                  rw_resp_o,
     input  [7:0]                        rw_wmask_i,
@@ -151,7 +151,7 @@ module axi_rw # (
     end
 
     // ------------------Process Data------------------
-    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);       // 3
+    parameter ALIGNED_WIDTH = $clog2(AXI_DATA_WIDTH / 8);       // 3 4
     parameter OFFSET_WIDTH  = $clog2(AXI_DATA_WIDTH);           // 6    
     parameter AXI_SIZE      = $clog2(AXI_DATA_WIDTH / 8);       // 3
     parameter MASK_WIDTH    = AXI_DATA_WIDTH * 2;               // 128    
@@ -170,7 +170,7 @@ module axi_rw # (
                                 | ({4{size_d}} & {4'b0111})
                                 ;
     wire [3:0] addr_end     = addr_op1 + addr_op2;
-    wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;
+    wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;//3:ALIGNED_WIDTH
 
     wire [7:0] axi_len      = aligned ? TRANS_LEN - 1 : {{7{1'b0}}, overstep};
     wire [2:0] axi_size     = AXI_SIZE[2:0];

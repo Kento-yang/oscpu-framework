@@ -59,31 +59,32 @@ module top_axirw(
 );
 // 0.RESET TREE
     logic rst_n_sync;
-    sync_reset_async_release u_reset_tree(
-        .clock                             (clock                       ),
-        .reset_n                           (rst_n                   ),
+sync_reset_async_release u_reset_tree(
+    .clock                             (clock                     ),
+    .reset_n                           (rst_n                     ),
 
-        .rst_n                             (rst_n_sync                     ) 
-    );
+    .rst_n                             (rst_n_sync                ) 
+);
 // 1. AXI4 INTERFACE assign to SimTop
-    axi4_if #(.AXI_ADDR_WIDTH(`DATA_WIDTH), .AXI_DATA_WIDTH(`DATA_WIDTH), .AXI_ID_WIDTH(4), .AXI_USER_WIDTH(1)) axi_if();
-    axi_rw u_axi_rw (
-        .clock                          (clock),
-        .reset_n                         (rst_n_sync),
+axi4_if #(.AXI_ADDR_WIDTH(`DATA_WIDTH), .AXI_DATA_WIDTH(`DATA_WIDTH), .AXI_ID_WIDTH(4), .AXI_USER_WIDTH(1)) axi_if();
 
-        .rw_valid_i                     (rw_valid_i),
-        .rw_ready_o                     (rw_ready_o),
-        .rw_req_i                       (rw_req_i),
-        .data_read_o                    (data_read_o),
-        .data_write_i                   (data_write_i),
-        .rw_addr_i                      (rw_addr_i),
-        .rw_size_i                      (rw_size_i),
-        .rw_resp_o                      (rw_resp_o),
-        .rw_wmask_i                     (rw_wmask),//for write' 
+axi_rw u_axi_rw (
+    .clock                             (clock                     ),
+    .reset_n                           (rst_n_sync                ),
+
+    .rw_valid_i                        (rw_valid_i                ),
+    .rw_ready_o                        (rw_ready_o                ),
+    .rw_req_i                          (rw_req_i                  ),
+    .data_read_o                       (data_read_o               ),
+    .data_write_i                      (data_write_i              ),
+    .rw_addr_i                         (rw_addr_i                 ),
+    .rw_size_i                         (rw_size_i                 ),
+    .rw_resp_o                         (rw_resp_o                 ),
+    .rw_wmask_i                        (rw_wmask                  ),//for write' 
 
         //AXI4-LITE INTERFACE
-        .Axi4_M                         (axi_if)
-    ); 
+    .Axi4_M                            (axi_if                    ) 
+);
     assign axi_if.aw_ready = i_axi_aw_ready   ;
     assign o_axi_aw_valid  = axi_if.aw_valid  ;
     assign o_axi_aw_addr   = axi_if.aw_addr   ;
@@ -136,8 +137,8 @@ module top_axirw(
     logic                  rw_valid_i;   
     logic              rw_ready_o  ;
     logic              rw_req_i   ;  
-    logic [  63:0]         data_read_o;  
-    logic [  63:0]         data_write_i; 
+    logic [  127:0]         data_read_o;  
+    logic [  127:0]         data_write_i; 
     logic [  63:0]         rw_addr_i;    
     logic [   1:0]         rw_size_i;    
     logic [   1:0]         rw_resp_o;    
@@ -145,7 +146,7 @@ module top_axirw(
     logic if_valid;
     logic if_ready;
     wire if_req = `REQ_READ;
-    logic [63:0] if_data_read;
+    logic [127:0] if_data_read;
     logic [63:0] if_addr;
     logic [1:0] if_size;
     logic [1:0] if_resp;
@@ -162,66 +163,107 @@ module top_axirw(
     logic [7:0] mem_wmask;
 
 // 2. Arbiter for IFU/MEM to axi_rw
-logic grant;
+    logic grant;
 if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
-    .clk             ( clock             ),
-    .reset_n         ( rst_n_sync         ),
+    .clk                               (clock                     ),
+    .reset_n                           (rst_n_sync                ),
 
-    .if_valid        ( if_valid        ),
-    .if_ready        ( if_ready        ),
-    .if_req          ( if_req          ),
-    .if_data_read    ( if_data_read    ),
-    .if_addr         ( if_addr         ),
-    .if_size         ( if_size         ),
-    .if_resp         ( if_resp         ),
+    .if_valid                          (arb_ic_valid_o              ),//(if_valid                  ),
+    .if_ready                          (arb_ic_ready_i              ),//(if_ready                  ),
+    .if_req                            (if_req                      ),//(if_req                    ),
+    .if_data_read                      (arb_ic_rdata_i              ),//(if_data_read              ),
+    .if_addr                           (arb_ic_addr_o               ),//(if_addr                   ),
+    .if_size                           (arb_ic_size                 ),//(if_size                   ),
+    .if_resp                           (arb_ic_resp                 ),//(if_resp                   ),
 
-    .mem_valid       ( mem_valid       ),
-    .mem_ready       ( mem_ready       ),
-    .mem_req         ( mem_req         ),
-    .mem_data_read   ( mem_data_read   ),
-    .mem_data_write  ( mem_data_write  ),
-    .mem_addr        ( mem_addr        ),
-    .mem_size        ( mem_size        ),
-    .mem_resp        ( mem_resp        ),
-    .mem_wmask       ( mem_wmask       ),
+    .mem_valid                         (mem_valid                 ),
+    .mem_ready                         (mem_ready                 ),
+    .mem_req                           (mem_req                   ),
+    .mem_data_read                     (mem_data_read             ),
+    .mem_data_write                    (mem_data_write            ),
+    .mem_addr                          (mem_addr                  ),
+    .mem_size                          (mem_size                  ),
+    .mem_resp                          (mem_resp                  ),
+    .mem_wmask                         (mem_wmask                 ),
 
-    .grant(grant),
-    .rw_valid_i      ( rw_valid_i      ),
-    .rw_ready_o      ( rw_ready_o      ),
-    .rw_req_i        ( rw_req_i        ),
-    .data_read_o     ( data_read_o     ),
-    .data_write_i    ( data_write_i    ),
-    .rw_addr_i       ( rw_addr_i       ),
-    .rw_size_i       ( rw_size_i       ),
-    .rw_resp_o       ( rw_resp_o       ),
-    .rw_wmask(rw_wmask)
+    .grant                             (grant                     ),
+    .rw_valid_i                        (rw_valid_i                ),
+    .rw_ready_o                        (rw_ready_o                ),
+    .rw_req_i                          (rw_req_i                  ),
+    .data_read_o                       (data_read_o               ),
+    .data_write_i                      (data_write_i              ),
+    .rw_addr_i                         (rw_addr_i                 ),
+    .rw_size_i                         (rw_size_i                 ),
+    .rw_resp_o                         (rw_resp_o                 ),
+    .rw_wmask                          (rw_wmask                  ) 
+);
+    logic       [`PC_WIDTH-1:0]             if_pc    ;
+    logic                          if_ic_valid_i                  ;
+    logic                          if_ic_ready_o                  ;
+    logic   [`AXI_DATA_WIDTH : 0]  if_ic_rdata_o                  ;
+    logic   [`AXI_ADDR_WIDTH-1:0]  if_ic_addr_i                   ;
+    logic       [   1:0]           if_ic_size                     ;
+    logic       [   1:0]           if_ic_resp                     ;
+
+//icache---arbiter
+    logic                          arb_ic_valid_o                 ; 
+    logic                          arb_ic_ready_i                 ; 
+    logic  [127:0]                  arb_ic_rdata_i                 ;    
+    logic  [`AXI_ADDR_WIDTH-1:0]   arb_ic_addr_o                  ; 
+    logic        [   1:0]          arb_ic_size                    ;
+    logic        [   1:0]          arb_ic_resp                    ;//读响应信号
+
+//
+    logic icache_hit;
+
+icache u_icache(
+    .clk                               (clock                       ),
+    .rst_n                             (rst_n_sync                  ),
+    .if_pc(if_pc),
+    .if_ic_valid_i                     (if_valid             ),
+    .if_ic_ready_o_r                     (if_ready             ),
+    .if_ic_rdata_o                     (if_data_read             ),
+    .if_ic_addr_i                      (if_addr              ),
+    .if_ic_size                        (if_size                ),
+    .if_ic_resp                        (if_resp                ),
+
+    .arb_ic_valid_o                    (arb_ic_valid_o            ),
+    .arb_ic_ready_i                    (arb_ic_ready_i            ),
+    .arb_ic_rdata_i                    (arb_ic_rdata_i            ),
+    .arb_ic_addr_o                     (arb_ic_addr_o             ),
+    .arb_ic_size                       (arb_ic_size               ),
+    .arb_ic_resp                       (arb_ic_resp               ),
+
+    .hit                               (icache_hit                       ) 
 );
 
-    top u_top(
-        .clk                            (clock),
-        .rst_n                          (rst_n_sync),
+top u_top(
+    .clk                               (clock                     ),
+    .rst_n                             (rst_n_sync                ),
 
-        .grant(grant),
+    .grant                             (grant                     ),
+    .icache_hit(icache_hit),
+    .if_pc(if_pc),
 //IF
-        .if_valid                       (if_valid),
-        .if_ready                       (if_ready),
-        .if_data_read                   (if_data_read),
-        .if_addr                        (if_addr),
-        .if_size                        (if_size),
-        .if_resp                        (if_resp),
+    .if_valid                          (if_valid                  ),
+    .if_ready                          (if_ready                  ),
+    .if_data_read                      (if_data_read              ),
+    .if_addr                           (if_addr                   ),
+    .if_size                           (if_size                   ),
+    .if_resp                           (if_resp                   ),
 //MEM
-        .mem_valid                      (mem_valid),
-        .mem_ready                      (mem_ready),
-        .mem_rw_req                     (mem_req),
-        .mem_data_read                  (mem_data_read),
-        .mem_data_write                 (mem_data_write),
-        .mem_addr                       (mem_addr),
-        .mem_size                       (mem_size),
-        .mem_resp                       (mem_resp),
+    .mem_valid                         (mem_valid                 ),
+    .mem_ready                         (mem_ready                 ),
+    .mem_rw_req                        (mem_req                   ),
+    .mem_data_read                     (mem_data_read             ),
+    .mem_data_write                    (mem_data_write            ),
+    .mem_addr                          (mem_addr                  ),
+    .mem_size                          (mem_size                  ),
+    .mem_resp                          (mem_resp                  ),
 
-        .mem_wmask                      (mem_wmask),
-        .s_uart_out_valid(s_uart_out_valid),
-        .s_uart_out_char(s_uart_out_char)
+    .mem_wmask                         (mem_wmask                 ),
+    .s_uart_out_valid                  (s_uart_out_valid          ),
+    .s_uart_out_char                   (s_uart_out_char           ) 
     );
 
 

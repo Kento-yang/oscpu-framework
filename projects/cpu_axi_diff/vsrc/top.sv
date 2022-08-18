@@ -6,6 +6,10 @@ module top (
     input                               clk                        ,
     input                               rst_n                      ,
     input                               grant                      ,
+
+    //CACHE INTERFACE
+    input  logic                        icache_hit,
+    output logic  [`PC_WIDTH-1:0]       if_pc                      ,
     //IF INTTERFACE
     output                              if_valid                   ,
     input                               if_ready                   ,
@@ -62,11 +66,12 @@ module top (
     logic                       ready_id2if;
     logic                       valid_if2id;
     logic                       fetched;
-    logic  [`PC_WIDTH-1:0]      if_pc;
+    
     //logic pc_add_imm_flag;
 if_stage u_if_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
+    .icache_hit(icache_hit),
     .flush                             (flush                     ), 
 
     .if_valid                          (if_valid                  ),
@@ -160,6 +165,7 @@ id_stage u_id_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
+
     //.pipe_wen                          (pipe_wen_id                  ),
     //.bubble                            (bubble                    ),
     .bpu_bubble                        (bpu_bubble                ),

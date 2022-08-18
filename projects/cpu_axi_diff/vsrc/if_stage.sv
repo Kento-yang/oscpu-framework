@@ -2,6 +2,7 @@
 module if_stage(
     input                               clk,
     input                               rst_n,
+    input logic                         icache_hit,
     input logic                         flush,
 //interface for oscpu
     output                              if_valid                   ,
@@ -73,12 +74,12 @@ always @( posedge clk ) begin
     fetched <= 0;
     mret_cnt <= 2'b00;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && (iru_excp || iru_intr)) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && (iru_excp || iru_intr)  ) begin
     if_pc <= if_addr;
     mret_cnt <= mret_cnt + 1;
     fetched <= 1;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !(iru_excp || iru_intr)) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !(iru_excp || iru_intr)  ) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
     mret_cnt <= 2'b00;

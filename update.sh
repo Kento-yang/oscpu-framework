@@ -7,7 +7,7 @@ if [ $1 = "-b" ]; then
     ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/rt-thread/rtthread.bin" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b
 else                                                                                            
 #time
-    ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/interrupt-test/$1-interrupt-test.bin " -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b -b  #--dump-wave -b 2260000
+    ./build.sh -e cpu_axi_diff -d -s -a "-i non-output/cpu-tests/$1-cpu-tests.bin --dump-wave -b 0 " -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b -b  #--dump-wave -b 2260000
 #cpu-tests
     #./build.sh -e cpu_axi_diff -d -s -a "-i non-output/cpu-tests/$1-cpu-tests.bin --dump-wave -b 0" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" 
 
