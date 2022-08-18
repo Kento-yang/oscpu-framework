@@ -214,7 +214,7 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     logic        [   1:0]          arb_ic_resp                    ;//读响应信号
 
 //
-    logic hit;
+    logic icache_hit;
 
 icache u_icache(
     .clk                               (clock                       ),

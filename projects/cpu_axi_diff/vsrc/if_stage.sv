@@ -74,18 +74,19 @@ always @( posedge clk ) begin
     fetched <= 0;
     mret_cnt <= 2'b00;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && (iru_excp || iru_intr)  ) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && (iru_excp || iru_intr) /*&& icache_hit*/) begin
     if_pc <= if_addr;
     mret_cnt <= mret_cnt + 1;
     fetched <= 1;
   end
-  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !(iru_excp || iru_intr)  ) begin
+  else if ( axi_if_handshake_done && jump_cnt == 2'b0 && !(iru_excp || iru_intr) /*&& icache_hit*/ ) begin
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
     mret_cnt <= 2'b00;
     fetched <= 1;
   end
   else begin
+    if_pc <= if_pc;
     if(mret_cnt == 2'b00)begin
       if_addr <= next_pc;
     end
@@ -163,16 +164,6 @@ pc_update u0_pc_update(
 
 assign next_pc = (iru_excp | iru_intr) ? iru_pc : next_pc_r;
 
-logic wait_post_ready;
-always @(posedge clk or negedge rst_n) begin
-  if(!rst_n)begin
-    wait_post_ready <= 1'b0;
-  end else if(!pc_wen | axi_if_handshake_done)begin
-    wait_post_ready <= 1'b1;
-  end else if(pc_wen)begin
-    wait_post_ready <= 1'b0;
-  end
-end
 //------------------------------------------------------------------------------
 //  IF-ID HANDSHAKE 
 //------------------------------------------------------------------------------

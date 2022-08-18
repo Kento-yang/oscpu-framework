@@ -136,7 +136,10 @@ module icache #(
         end
         else begin
             case(next_state)
-                IDLE: if_ic_ready_o <= 0;
+                IDLE: begin
+                      if_ic_ready_o <= 0;
+                      arb_ic_valid_o <= 0;
+                end
                 LOOK_UP:begin
                     if(hit_way0) begin//way 0 output
                         if_ic_ready_o <= 1;
@@ -163,15 +166,17 @@ module icache #(
                         way1_cen <= 1;
                         way1_wen <= 1;
                         hit_line_rdata <= 128'b0;
+                        arb_ic_valid_o <= 0;
                     end
                 end
-                MISS:begin
+                MISS:if_ic_ready_o <= 0;
+                REPLACE:begin
                     arb_ic_valid_o <= 1;
                     arb_ic_addr_o <= if_ic_addr_i;
                     if_ic_ready_o <= 0;
                 end
-                REPLACE:;
                 REFILL:begin
+                    arb_ic_valid_o <= 0;
                     if(!age)begin//LRU refill use age.
                         way0_tag[if_addr_index][I_TAG:0] <= {1'b1,if_addr_tag};
                         way0_wdata <= arb_ic_rdata_i;
@@ -184,6 +189,7 @@ module icache #(
                         way1_cen <= 0;
                         way1_wen <= 0;
                     end
+                    
                 end
                 default:begin 
                     if_ic_ready_o <= 0;

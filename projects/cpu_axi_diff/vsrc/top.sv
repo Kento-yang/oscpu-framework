@@ -566,7 +566,7 @@ csr_regs u_csr_regs(
     reg     [`REG_BUS]       regs_diff_npc [0:31]       ;
     reg     [`DATA_WIDTH-1:0]cmt_intrNO                 ;
     wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next && wbu_ready
-                                        && (wb_diff_pc != cmt_wb_diff_pc) && !iru_intr;//一条指令不能提交两遍
+                                        && !iru_intr;//一条指令不能提交两遍
 
   assign s_uart_out_valid = real_cmt & (cmt_inst == `DATA_WIDTH'h7b);
   assign s_uart_out_char = regs[10][7:0];

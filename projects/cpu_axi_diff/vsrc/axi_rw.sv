@@ -270,7 +270,7 @@ module axi_rw # (
     wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (Axi4_M.r_data & mask_l) >> aligned_offset_l;
     wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (Axi4_M.r_data & mask_h) << aligned_offset_h;
 
-    generate
+    /*generate
         for (genvar i = 0; i < TRANS_LEN; i += 1) begin
             always @(posedge clock) begin
                 if (!reset_n) begin
@@ -291,6 +291,21 @@ module axi_rw # (
                 end
             end
         end
-    endgenerate
+    endgenerate*/
+    
+    //dont care mask because no unaligned accesses
+    always @(posedge clock) begin
+        if (!reset_n) begin
+            data_read_o <= 0;
+        end
+        else if (Axi4_M.r_valid & Axi4_M.r_ready) begin
+            if (len == TRANS_LEN-1) begin
+                data_read_o[TRANS_LEN*AXI_DATA_WIDTH-1:AXI_DATA_WIDTH] <= Axi4_M.r_data;
+            end
+            else begin
+                data_read_o[AXI_DATA_WIDTH-1:0] <= Axi4_M.r_data;
+            end
+        end
+    end
 
 endmodule
