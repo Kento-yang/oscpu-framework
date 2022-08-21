@@ -158,40 +158,44 @@ module axi_rw # (
     parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH;   // 1
     parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;      // 0
 
-    wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
+    //wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
     wire size_b             = rw_size_i == `SIZE_B;//00
     wire size_h             = rw_size_i == `SIZE_H;//01
     wire size_w             = rw_size_i == `SIZE_W;//10
     wire size_d             = rw_size_i == `SIZE_D;//11
-    wire [3:0] addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, rw_addr_i[ALIGNED_WIDTH-1:0]};
-    wire [3:0] addr_op2     = ({4{size_b}} & {4'b0000})
+    //wire [3:0] addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, rw_addr_i[ALIGNED_WIDTH-1:0]};
+    /*wire [3:0] addr_op2     = ({4{size_b}} & {4'b0000})
                                 | ({4{size_h}} & {4'b0001})
                                 | ({4{size_w}} & {4'b0011})
                                 | ({4{size_d}} & {4'b0111})
-                                ;
-    wire [3:0] addr_end     = addr_op1 + addr_op2;
-    wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;//3:ALIGNED_WIDTH
+                                ;*/
+    //wire [3:0] addr_end     = addr_op1 + addr_op2;
+    //wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;//3:ALIGNED_WIDTH
 
-    wire [7:0] axi_len      = aligned ? TRANS_LEN - 1 : {{7{1'b0}}, overstep};
+    wire [7:0] axi_len      = 8'b1;
     wire [2:0] axi_size     = AXI_SIZE[2:0];
     
-    wire [AXI_ADDR_WIDTH-1:0] axi_addr          = {rw_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
-    wire [OFFSET_WIDTH-1:0] aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {rw_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
-    wire [OFFSET_WIDTH-1:0] aligned_offset_h    = AXI_DATA_WIDTH - aligned_offset_l;
-    wire [MASK_WIDTH-1:0] mask                  = (({MASK_WIDTH{size_b}} & {{MASK_WIDTH-8{1'b0}}, 8'hff})
+    //wire [AXI_ADDR_WIDTH-1:0] axi_addr          = {rw_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
+    //wire [OFFSET_WIDTH-1:0] aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {rw_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
+    //wire [OFFSET_WIDTH-1:0] aligned_offset_h    = AXI_DATA_WIDTH - aligned_offset_l;
+    /*wire [MASK_WIDTH-1:0] mask                  = (({MASK_WIDTH{size_b}} & {{MASK_WIDTH-8{1'b0}}, 8'hff})
                                                     | ({MASK_WIDTH{size_h}} & {{MASK_WIDTH-16{1'b0}}, 16'hffff})
                                                     | ({MASK_WIDTH{size_w}} & {{MASK_WIDTH-32{1'b0}}, 32'hffffffff})
                                                     | ({MASK_WIDTH{size_d}} & {{MASK_WIDTH-64{1'b0}}, 64'hffffffff_ffffffff})
-                                                    ) << aligned_offset_l;
-    wire [AXI_DATA_WIDTH-1:0] mask_l            = mask[AXI_DATA_WIDTH-1:0];
-    wire [AXI_DATA_WIDTH-1:0] mask_h            = mask[MASK_WIDTH-1:AXI_DATA_WIDTH];
+                                                    ) << aligned_offset_l;*/
+    //wire [AXI_DATA_WIDTH-1:0] mask_l            = mask[AXI_DATA_WIDTH-1:0];
+    //wire [AXI_DATA_WIDTH-1:0] mask_h            = mask[MASK_WIDTH-1:AXI_DATA_WIDTH];
 
     wire [AXI_ID_WIDTH-1:0] axi_id              = {AXI_ID_WIDTH{1'b0}};
-    wire [AXI_USER_WIDTH-1:0] axi_user          = {AXI_USER_WIDTH{1'b0}};
+    //wire [AXI_USER_WIDTH-1:0] axi_user          = {AXI_USER_WIDTH{1'b0}};
 
     //reg rw_ready;
     //wire rw_ready_nxt = trans_done;
     //wire rw_ready_en      = trans_done | rw_ready;
+
+    //wire [3 : 0] out_id_nxt = (Axi4_M.b_valid) ? Axi4_M.b_id : (Axi4_M.r_valid) ? Axi4_M.r_id : 0;
+
+
     always @(posedge clock) begin
         if (!reset_n) begin
             rw_ready_o <= 0;
@@ -216,82 +220,41 @@ module axi_rw # (
     // ------------------Write Transaction------------------
     // write addr channel:
     assign Axi4_M.aw_valid   = w_state_addr & w_valid;
-    assign Axi4_M.aw_addr    = axi_addr;
+    assign Axi4_M.aw_addr    = rw_addr_i;
     assign Axi4_M.aw_len     = axi_len;
     assign Axi4_M.aw_size    = axi_size;
     assign Axi4_M.aw_burst   = `AXI_BURST_TYPE_INCR;
     assign Axi4_M.aw_id      = axi_id;                                                                           // no use.
-    assign Axi4_M.aw_user    = axi_user;                                                                         // no use.
-    assign Axi4_M.aw_prot    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;  // no use.
-    assign Axi4_M.aw_cache   = `AXI_AWCACHE_WRITE_BACK_READ_AND_WRITE_ALLOCATE;                                  // no use.
-    assign Axi4_M.aw_lock    = 1'b0;                                                                             // no use.
-    assign Axi4_M.aw_qos     = 4'h0;                                                                             // no use.
-    assign Axi4_M.aw_region  = 4'h0;                                                                             // no use.
+
 
     //Write data channel signals
     assign Axi4_M.w_valid    = w_state_write;
     assign Axi4_M.w_last     = w_hs & (len == axi_len);
-    assign Axi4_M.w_user     = axi_user;                                                                         // no use.
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_l  = ( data_write_i << aligned_offset_l) & mask_l ;
-    wire [AXI_DATA_WIDTH-1:0] axi_w_data_h  = ( data_write_i >> aligned_offset_h) & mask_h;
-    wire [AXI_DATA_WIDTH/8-1:0] axi_w_strb_l;
-    wire [AXI_DATA_WIDTH/8-1:0] axi_w_strb_h;
-    
-    for(genvar i=0;i<AXI_DATA_WIDTH/8;i=i+1)begin
-        assign axi_w_strb_l[i] = mask_l[8*i];
-        assign axi_w_strb_h[i] = mask_h[8*i];
+
+    assign Axi4_M.w_data  = w_last ? data_write_i[127:64] : data_write_i[63:0];
+    assign Axi4_M.w_strb  = 8'b11111111;
+
+    reg w_last;
+    always @(posedge clock) begin
+        w_last <= Axi4_M.w_valid;
     end
 
-
-    assign Axi4_M.w_data  = Axi4_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_data_h : axi_w_data_l): {AXI_DATA_WIDTH{1'b0}};    
-    assign Axi4_M.w_strb  = Axi4_M.w_valid ? ( (~aligned & overstep & len[0]) ? axi_w_strb_h : axi_w_strb_l): {AXI_DATA_WIDTH/8{1'b0}};
-
-    //Write response channel signals
-    assign Axi4_M.b_ready    = w_state_resp;
+    //Write response channel signalss
+    assign Axi4_M.b_ready    = w_state_resp & w_valid;
 
     // ------------------Read Transaction------------------
     // Read address channel signals
     assign Axi4_M.ar_valid   = r_state_addr & r_valid;
-    assign Axi4_M.ar_addr    = axi_addr;
-    assign Axi4_M.ar_prot    = `AXI_PROT_UNPRIVILEGED_ACCESS | `AXI_PROT_SECURE_ACCESS | `AXI_PROT_DATA_ACCESS;
+    assign Axi4_M.ar_addr    = rw_addr_i;
     assign Axi4_M.ar_id      = axi_id;
-    assign Axi4_M.ar_user    = axi_user;
     assign Axi4_M.ar_len     = axi_len;
     assign Axi4_M.ar_size    = axi_size;
     assign Axi4_M.ar_burst   = `AXI_BURST_TYPE_INCR;
-    assign Axi4_M.ar_lock    = 1'b0;
-    assign Axi4_M.ar_cache   = `AXI_ARCACHE_NORMAL_NON_CACHEABLE_NON_BUFFERABLE;
-    assign Axi4_M.ar_qos     = 4'h0;
 
 
     // Read data channel signals
     assign Axi4_M.r_ready    = r_state_read;
 
-    wire [AXI_DATA_WIDTH-1:0] axi_r_data_l  = (Axi4_M.r_data & mask_l) >> aligned_offset_l;
-    wire [AXI_DATA_WIDTH-1:0] axi_r_data_h  = (Axi4_M.r_data & mask_h) << aligned_offset_h;
-
-    /*generate
-        for (genvar i = 0; i < TRANS_LEN; i += 1) begin
-            always @(posedge clock) begin
-                if (!reset_n) begin
-                    data_read_o[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= 0;
-                end
-                else if (Axi4_M.r_valid & Axi4_M.r_ready) begin
-                    if (~aligned & overstep) begin
-                        if (len[0]) begin//second read
-                            data_read_o[AXI_DATA_WIDTH-1:0] <= data_read_o[AXI_DATA_WIDTH-1:0] | axi_r_data_h;
-                        end
-                        else begin//first read
-                            data_read_o[AXI_DATA_WIDTH-1:0] <= axi_r_data_l;
-                        end
-                    end
-                    else if (len == i) begin
-                        data_read_o[i*AXI_DATA_WIDTH+:AXI_DATA_WIDTH] <= axi_r_data_l;
-                    end
-                end
-            end
-        end
-    endgenerate*/
     
     //dont care mask because no unaligned accesses
     always @(posedge clock) begin

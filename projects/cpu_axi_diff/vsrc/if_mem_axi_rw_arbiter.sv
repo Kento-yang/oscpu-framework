@@ -2,6 +2,7 @@
 module if_mem_axi_rw_arbiter(
     input                               clk                        ,
     input                               reset_n                    ,
+    input                               icache_hit                 ,
 //IF INTTERFACE
     input                               if_valid                   ,
     output                              if_ready                   ,
@@ -42,7 +43,7 @@ module if_mem_axi_rw_arbiter(
             grant <= MASTER_0;
         else if(mem_valid && mem_ready)
             grant <= MASTER_0; 
-        else if(if_valid && if_ready && mem_valid )
+        else if((if_valid && if_ready && mem_valid) || (icache_hit && mem_valid) )
             grant <= MASTER_1;
     end
 

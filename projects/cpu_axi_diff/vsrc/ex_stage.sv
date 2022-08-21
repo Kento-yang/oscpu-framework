@@ -74,7 +74,7 @@ module ex_stage(
     logic                               pipe_wen;
     logic           [`PC_WIDTH-1:0]             tem_diff_pc;
     //(tem_diff_pc != ex_diff_pc)只有指令不一样的时候才能使能打拍，避免相同指令源寄存器到目标寄存器之间形成环。(rtthread 0x80004860 subw	a5,a6,a5)
-    assign pipe_wen =  valid_id2ex && ready_ex2id && (tem_diff_pc != ex_diff_pc);//shake success with id_stage
+    assign pipe_wen =  valid_id2ex && ready_ex2id /*&& (tem_diff_pc != ex_diff_pc)*/;//shake success with id_stage
 
 
     

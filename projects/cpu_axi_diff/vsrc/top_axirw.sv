@@ -167,6 +167,7 @@ axi_rw u_axi_rw (
 if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .clk                               (clock                     ),
     .reset_n                           (rst_n_sync                ),
+    .icache_hit(icache_hit),
 
     .if_valid                          (arb_ic_valid_o              ),//(if_valid                  ),
     .if_ready                          (arb_ic_ready_i              ),//(if_ready                  ),
@@ -221,13 +222,13 @@ icache u_icache(
     .rst_n                             (rst_n_sync                  ),
     .if_pc(if_pc),
     .if_ic_valid_i                     (if_valid             ),
-    .if_ic_ready_o_r                     (if_ready             ),
+    .if_ic_ready_o_r1                    (if_ready             ),
     .if_ic_rdata_o                     (if_data_read             ),
     .if_ic_addr_i                      (if_addr              ),
     .if_ic_size                        (if_size                ),
     .if_ic_resp                        (if_resp                ),
 
-    .arb_ic_valid_o                    (arb_ic_valid_o            ),
+    .arb_ic_valid_o_and_r                    (arb_ic_valid_o            ),
     .arb_ic_ready_i                    (arb_ic_ready_i            ),
     .arb_ic_rdata_i                    (arb_ic_rdata_i            ),
     .arb_ic_addr_o                     (arb_ic_addr_o             ),

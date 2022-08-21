@@ -21,14 +21,14 @@ module icache #(
     input logic   [`PC_WIDTH-1:0]        if_pc,
 //core---icache
     input                                if_ic_valid_i                   ,
-    output                               if_ic_ready_o_r                   ,
+    output                               if_ic_ready_o_r1                ,
     output        [`AXI_DATA_WIDTH-1:0]  if_ic_rdata_o                   ,
     input logic   [`AXI_ADDR_WIDTH-1:0]  if_ic_addr_i                    ,
     input             [   1:0]           if_ic_size                      ,
     output            [   1:0]           if_ic_resp                      ,
 
 //icache---arbiter
-    output                               arb_ic_valid_o                  ,
+    output                               arb_ic_valid_o_and_r               ,
     input                                arb_ic_ready_i                  ,
     input        [ CACHE_LINE_WIDTH-1: 0]   arb_ic_rdata_i               ,
     output logic [`AXI_ADDR_WIDTH-1:0]   arb_ic_addr_o                   ,
@@ -64,12 +64,11 @@ module icache #(
     wire [I_OFFSET-1:0] if_addr_offset  = if_pc[I_OFFSET-1:0];
  
     logic hit_way0, hit_way1;
-    logic [CACHE_LINE_WIDTH-1 : 0] hit_line_rdata;
     assign hit_way0 = ({1'b1, if_addr_tag } == way0_tag[if_addr_index] ) ? 1 : 0 ; //{valid,tag}
     assign hit_way1 = ({1'b1, if_addr_tag } == way1_tag[if_addr_index] ) ? 1 : 0 ; //{valid,tag}
     assign hit = hit_way0 | hit_way1;
 
-    logic if_ic_ready_o;
+    //logic if_ic_ready_o;
     wire if_read_hs = if_ic_valid_i & if_ic_ready_o;
     wire axi_read_hs = arb_ic_valid_o & arb_ic_ready_i;
 //------------------------------------------------------------------------------
@@ -106,11 +105,10 @@ module icache #(
                     next_state = REPLACE;
 
         REFILL: if(hit & if_ic_valid_i)
-                    next_state = LOOK_UP;
-                else if(!hit & if_ic_valid_i)
-                    next_state = REFILL;
-                else
                     next_state = IDLE;
+                else
+                    next_state = REFILL;
+
         default:    next_state = IDLE;
         endcase 
     end
@@ -139,6 +137,24 @@ module icache #(
                 IDLE: begin
                       if_ic_ready_o <= 0;
                       arb_ic_valid_o <= 0;
+                    /*if(hit_way0) begin//way 0 output
+                        way0_cen <= 0;
+                        way0_wen <= 1;
+                        way1_cen <= 0;
+                        way1_wen <= 1;
+                    end
+                    else if(hit_way1)begin//way1 output
+                        way0_cen <= 0;
+                        way0_wen <= 1;
+                        way1_cen <= 0;
+                        way1_wen <= 1;
+                    end
+                    else begin
+                        way0_cen <= 1;
+                        way0_wen <= 1;
+                        way1_cen <= 1;
+                        way1_wen <= 1;
+                    end*/
                 end
                 LOOK_UP:begin
                     if(hit_way0) begin//way 0 output
@@ -147,8 +163,6 @@ module icache #(
                         way0_wen <= 1;
                         way1_cen <= 0;
                         way1_wen <= 1;
-                        hit_line_rdata <= way0_rdata;  
-                        if_ic_ready_o <= 1;
                     end
                     else if(hit_way1)begin//way1 output
                         if_ic_ready_o <= 1;
@@ -156,8 +170,6 @@ module icache #(
                         way0_wen <= 1;
                         way1_cen <= 0;
                         way1_wen <= 1;
-                        hit_line_rdata <= way1_rdata;
-                        if_ic_ready_o <= 1;
                     end
                     else begin
                         if_ic_ready_o <= 0;
@@ -165,15 +177,14 @@ module icache #(
                         way0_wen <= 1;
                         way1_cen <= 1;
                         way1_wen <= 1;
-                        hit_line_rdata <= 128'b0;
                         arb_ic_valid_o <= 0;
                     end
                 end
                 MISS:if_ic_ready_o <= 0;
                 REPLACE:begin
-                    arb_ic_valid_o <= 1;
-                    arb_ic_addr_o <= if_ic_addr_i;
-                    if_ic_ready_o <= 0;
+                        arb_ic_valid_o <= 1;
+                        arb_ic_addr_o <= if_ic_addr_i;
+                        if_ic_ready_o <= 0;
                 end
                 REFILL:begin
                     arb_ic_valid_o <= 0;
@@ -188,8 +199,7 @@ module icache #(
                         way1_wdata <= arb_ic_rdata_i;
                         way1_cen <= 0;
                         way1_wen <= 0;
-                    end
-                    
+                    end              
                 end
                 default:begin 
                     if_ic_ready_o <= 0;
@@ -205,22 +215,40 @@ module icache #(
     end
     // delay becausd of sram delay
     logic if_read_hs_r;
+    logic arb_ic_valid_o, arb_ic_valid_o_r1, arb_ic_valid_o_r2;
+    logic if_ic_ready_o;
     always@(posedge clk or negedge rst_n)begin
-        if(!rst_n)
-            if_ic_ready_o_r <= 0;
-        else
-            if_ic_ready_o_r <= if_ic_ready_o;
+        if(!rst_n)begin
+           //if_ic_ready_o_r <= 0;
+            arb_ic_valid_o_r1 <= 0 ;
+            if_ic_ready_o_r1  <= 0 ;
+            arb_ic_valid_o_r2 <= 0 ;
+        end else begin
+            //if_ic_ready_o_r <= if_ic_ready_o;   
+            arb_ic_valid_o_r1 <= arb_ic_valid_o;//align with jump_pc need delay 2  cycle
+            arb_ic_valid_o_r2 <= arb_ic_valid_o_r1;
+            if_ic_ready_o_r1 <= if_ic_ready_o;  //align with sram rdata.
+        end
     end
 
+    assign arb_ic_valid_o_and_r = arb_ic_valid_o & arb_ic_valid_o_r1 & arb_ic_valid_o_r2;
                    
 //3.1 TAG equal! hit the cache and return the inst according the OFFSET.（valid == 1）
     always_comb begin
-        if(hit)
+        if(hit_way0)
             case(if_pc[I_OFFSET-1:I_OFFSET-2])
-                2'b00: if_ic_rdata_o = hit_line_rdata[63:0];
-                2'b01: if_ic_rdata_o = hit_line_rdata[95:32];
-                2'b10: if_ic_rdata_o = hit_line_rdata[127:64];
-                2'b11: if_ic_rdata_o = {{32{1'b0}}, hit_line_rdata[127:96]};
+                2'b00: if_ic_rdata_o = way0_rdata[63:0];
+                2'b01: if_ic_rdata_o = way0_rdata[95:32];
+                2'b10: if_ic_rdata_o = way0_rdata[127:64];
+                2'b11: if_ic_rdata_o = {{32{1'b0}}, way0_rdata[127:96]};
+                default:;
+            endcase
+        else if(hit_way1)
+            case(if_pc[I_OFFSET-1:I_OFFSET-2])
+                2'b00: if_ic_rdata_o = way1_rdata[63:0];
+                2'b01: if_ic_rdata_o = way1_rdata[95:32];
+                2'b10: if_ic_rdata_o = way1_rdata[127:64];
+                2'b11: if_ic_rdata_o = {{32{1'b0}}, way1_rdata[127:96]};
                 default:;
             endcase
         else
