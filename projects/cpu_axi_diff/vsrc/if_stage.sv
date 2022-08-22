@@ -3,6 +3,8 @@ module if_stage(
     input                               clk,
     input                               rst_n,
     input logic                         icache_hit,
+    input logic                         hit,
+    input logic                         hit_r,
     input logic                         flush,
 //interface for icache
     output                              if_valid                   ,
@@ -53,7 +55,8 @@ Reg #(
     .din      (if_data_read_i),
     .dout     (if_data_read_r)
   );
-  assign if_inst = axi_if_handshake_done ? if_data_read_i : if_data_read_r;
+  //hit first cycle out inst is always error because of sram rd need 1 cycle!!!
+  assign if_inst = (axi_if_handshake_done && !(hit && !hit_r) )? if_data_read_i : if_data_read_r;
 
 
   logic ex_jump_flag_r;
@@ -87,7 +90,7 @@ always @( posedge clk ) begin
     //iru_jmp_cnt <= iru_jmp_cnt + 1;
     fetched <= 0;
   end
-  else if ( axi_if_handshake_done && !(iru_excp || iru_intr || ex_jump_flag) && icache_hit  && (valid_if2id & ready_id2if)) begin//no jump, read common
+  else if ( axi_if_handshake_done && !(iru_excp || iru_intr || ex_jump_flag) && icache_hit  && (valid_if2id & ready_id2if) && !bubble_id_ex) begin//no jump, read common
     //if_inst <= if_data_read_i;
     if_pc <= if_addr;
     if_addr <= if_addr + 4;

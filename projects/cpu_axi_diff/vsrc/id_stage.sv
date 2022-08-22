@@ -25,6 +25,7 @@ module id_stage(
     input logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
     input logic            [`PC_WIDTH-1:0]      ex_diff_pc,//for ld-add adventure use
     input logic                                 ex_lsu_lden,
+    input logic   [`INST_WIDTH-1:0]             ex_inst,
 //from ex_mem   
     input logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,              // register write address   
     input logic                                mem_reg_wen,
@@ -99,13 +100,23 @@ module id_stage(
     //logic   [`PC_WIDTH-1:0]     id_pc    ;
     //logic pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
 
-    logic pipe_wen;
-    assign pipe_wen = /*~bubble_id_ex &&*/ valid_if2id && ready_id2if ;
+    logic pipe_wen,pipe_wen_r;
+
+    assign pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;//bubble_id_ex = 1 need stall the if-id reg.
+
+    //for bubble_id_ex destory the right pc in ld-add adventure.
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)
+            pipe_wen_r <= 0;
+        else
+            pipe_wen_r <= pipe_wen;
+    end
+
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-    .pipe_wen                          (pipe_wen),//if bypass bubble,if_id pipe stall
+    .pipe_wen                          ( pipe_wen   ),//if bypass bubble,if_id pipe stall
     .bubble                            (bpu_bubble                ),//from bpu
 
     .if_inst                           (if_inst                   ),
@@ -216,6 +227,9 @@ reg_file u1_reg_file(
     //logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;
 
 data_bypass u1_data_bypass(
+    .id_inst(id_inst),
+    .ex_inst(ex_inst),
+
     .reg1_raddr_id                     (id_reg1_raddr             ),
     .reg2_raddr_id                     (id_reg2_raddr             ),
     .reg1_raddr_ex                     (ex_reg1_raddr             ),

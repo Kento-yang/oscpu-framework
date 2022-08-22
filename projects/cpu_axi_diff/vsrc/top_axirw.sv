@@ -8,7 +8,7 @@ module top_axirw(
   // aw:
   input  logic                      i_axi_aw_ready  ,         
   output logic                      o_axi_aw_valid  ,
-  output logic [`DATA_WIDTH-1:0]     o_axi_aw_addr   ,
+  output logic [`DATA_WIDTH-1:0]    o_axi_aw_addr   ,
   output logic [2:0]                o_axi_aw_prot   ,
   output logic [3:0]                o_axi_aw_id     ,
   output logic                      o_axi_aw_user   ,
@@ -134,22 +134,23 @@ axi_rw u_axi_rw (
     assign axi_if.r_id     = i_axi_r_id       ;
     assign axi_if.r_user   = i_axi_r_user     ;   
     //connect AXI_RW and CPU
-    logic                  rw_valid_i;   
-    logic              rw_ready_o  ;
-    logic              rw_req_i   ;  
+    logic                   rw_valid_i;   
+    logic                   rw_ready_o  ;
+    logic                   rw_req_i   ;  
     logic [  127:0]         data_read_o;  
     logic [  127:0]         data_write_i; 
-    logic [  63:0]         rw_addr_i;    
-    logic [   1:0]         rw_size_i;    
-    logic [   1:0]         rw_resp_o;    
-    logic [7:0] rw_wmask;
-    logic if_valid;
-    logic if_ready;
+    logic [  31:0]          rw_addr_i;    
+    logic [   1:0]          rw_size_i;    
+    logic [   1:0]          rw_resp_o;    
+    logic [7:0]             rw_wmask;
+
+    logic                   if_valid;
+    logic                   if_ready;
     wire if_req = `REQ_READ;
-    logic [127:0] if_data_read;
-    logic [63:0] if_addr;
-    logic [1:0] if_size;
-    logic [1:0] if_resp;
+    logic [63:0]            if_data_read;
+    logic [63:0]            if_addr;
+    logic [1:0]             if_size;
+    logic [1:0]             if_resp;
 
     logic mem_valid;
     logic mem_ready;
@@ -167,7 +168,8 @@ axi_rw u_axi_rw (
 if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     .clk                               (clock                     ),
     .reset_n                           (rst_n_sync                ),
-    .icache_hit(icache_hit),
+    .icache_hit                        (icache_hit                ),
+    
 
     .if_valid                          (arb_ic_valid_o              ),//(if_valid                  ),
     .if_ready                          (arb_ic_ready_i              ),//(if_ready                  ),
@@ -201,7 +203,7 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
     logic       [`PC_WIDTH-1:0]             if_pc    ;
     logic                          if_ic_valid_i                  ;
     logic                          if_ic_ready_o                  ;
-    logic   [`AXI_DATA_WIDTH : 0]  if_ic_rdata_o                  ;
+    logic   [`AXI_DATA_WIDTH-1:0]  if_ic_rdata_o                  ;
     logic   [`AXI_ADDR_WIDTH-1:0]  if_ic_addr_i                   ;
     logic       [   1:0]           if_ic_size                     ;
     logic       [   1:0]           if_ic_resp                     ;
@@ -209,20 +211,21 @@ if_mem_axi_rw_arbiter u_if_mem_axi_rw_arbiter(
 //icache---arbiter
     logic                          arb_ic_valid_o                 ; 
     logic                          arb_ic_ready_i                 ; 
-    logic  [127:0]                  arb_ic_rdata_i                 ;    
+    logic  [127:0]                 arb_ic_rdata_i                 ;    
     logic  [`AXI_ADDR_WIDTH-1:0]   arb_ic_addr_o                  ; 
     logic        [   1:0]          arb_ic_size                    ;
     logic        [   1:0]          arb_ic_resp                    ;//读响应信号
 
 //
     logic icache_hit;
-
+    logic hit;
+    logic hit_r;
 icache u_icache(
     .clk                               (clock                       ),
     .rst_n                             (rst_n_sync                  ),
     .if_pc(if_pc),
     .if_ic_valid_i                     (if_valid             ),
-    .if_ic_ready_o_r1                    (if_ready             ),
+    .if_ic_ready_o_r                    (if_ready             ),
     .if_ic_rdata_o                     (if_data_read             ),
     .if_ic_addr_i                      (if_addr              ),
     .if_ic_size                        (if_size                ),
@@ -235,7 +238,9 @@ icache u_icache(
     .arb_ic_size                       (arb_ic_size               ),
     .arb_ic_resp                       (arb_ic_resp               ),
 
-    .hit                               (icache_hit                       ) 
+    .hit(hit),
+    .hit_r(hit_r),
+    .hit_delay_o                               (icache_hit                       ) 
 );
 
 top u_top(
@@ -244,6 +249,8 @@ top u_top(
 
     .grant                             (grant                     ),
     .icache_hit(icache_hit),
+    .hit(hit),
+    .hit_r(hit_r),
     .if_pc(if_pc),
 //IF
     .if_valid                          (if_valid                  ),

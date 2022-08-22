@@ -50,9 +50,8 @@
 
 module axi_rw # (
     parameter RW_DATA_WIDTH     = 128,
-    parameter RW_ADDR_WIDTH     = 64,
+    parameter RW_ADDR_WIDTH     = 32,
     parameter AXI_DATA_WIDTH    = 64,
-    parameter AXI_ADDR_WIDTH    = 64,
     parameter AXI_ID_WIDTH      = 4,
     parameter AXI_USER_WIDTH    = 1
 )(
@@ -158,33 +157,13 @@ module axi_rw # (
     parameter TRANS_LEN     = RW_DATA_WIDTH / AXI_DATA_WIDTH;   // 1
     parameter BLOCK_TRANS   = TRANS_LEN > 1 ? 1'b1 : 1'b0;      // 0
 
-    //wire aligned            = BLOCK_TRANS | rw_addr_i[ALIGNED_WIDTH-1:0] == 0;
     wire size_b             = rw_size_i == `SIZE_B;//00
     wire size_h             = rw_size_i == `SIZE_H;//01
     wire size_w             = rw_size_i == `SIZE_W;//10
     wire size_d             = rw_size_i == `SIZE_D;//11
-    //wire [3:0] addr_op1     = {{4-ALIGNED_WIDTH{1'b0}}, rw_addr_i[ALIGNED_WIDTH-1:0]};
-    /*wire [3:0] addr_op2     = ({4{size_b}} & {4'b0000})
-                                | ({4{size_h}} & {4'b0001})
-                                | ({4{size_w}} & {4'b0011})
-                                | ({4{size_d}} & {4'b0111})
-                                ;*/
-    //wire [3:0] addr_end     = addr_op1 + addr_op2;
-    //wire overstep           = addr_end[3:ALIGNED_WIDTH] != 0;//3:ALIGNED_WIDTH
 
     wire [7:0] axi_len      = 8'b1;
     wire [2:0] axi_size     = AXI_SIZE[2:0];
-    
-    //wire [AXI_ADDR_WIDTH-1:0] axi_addr          = {rw_addr_i[AXI_ADDR_WIDTH-1:ALIGNED_WIDTH], {ALIGNED_WIDTH{1'b0}}};
-    //wire [OFFSET_WIDTH-1:0] aligned_offset_l    = {{OFFSET_WIDTH-ALIGNED_WIDTH{1'b0}}, {rw_addr_i[ALIGNED_WIDTH-1:0]}} << 3;
-    //wire [OFFSET_WIDTH-1:0] aligned_offset_h    = AXI_DATA_WIDTH - aligned_offset_l;
-    /*wire [MASK_WIDTH-1:0] mask                  = (({MASK_WIDTH{size_b}} & {{MASK_WIDTH-8{1'b0}}, 8'hff})
-                                                    | ({MASK_WIDTH{size_h}} & {{MASK_WIDTH-16{1'b0}}, 16'hffff})
-                                                    | ({MASK_WIDTH{size_w}} & {{MASK_WIDTH-32{1'b0}}, 32'hffffffff})
-                                                    | ({MASK_WIDTH{size_d}} & {{MASK_WIDTH-64{1'b0}}, 64'hffffffff_ffffffff})
-                                                    ) << aligned_offset_l;*/
-    //wire [AXI_DATA_WIDTH-1:0] mask_l            = mask[AXI_DATA_WIDTH-1:0];
-    //wire [AXI_DATA_WIDTH-1:0] mask_h            = mask[MASK_WIDTH-1:AXI_DATA_WIDTH];
 
     wire [AXI_ID_WIDTH-1:0] axi_id              = {AXI_ID_WIDTH{1'b0}};
     //wire [AXI_USER_WIDTH-1:0] axi_user          = {AXI_USER_WIDTH{1'b0}};

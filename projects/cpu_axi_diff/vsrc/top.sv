@@ -9,6 +9,8 @@ module top (
 
     //CACHE INTERFACE
     input  logic                        icache_hit,
+    input  logic                        hit,
+    input  logic                        hit_r,
     output logic  [`PC_WIDTH-1:0]       if_pc                      ,
     //IF INTTERFACE
     output                              if_valid                   ,
@@ -72,6 +74,8 @@ if_stage u_if_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .icache_hit(icache_hit),
+    .hit(hit),
+    .hit_r(hit_r),
     .flush                             (flush                     ), 
 
     .if_valid                          (if_valid                  ),
@@ -186,6 +190,7 @@ id_stage u_id_stage(
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
     .ex_lsu_lden(ex_lsu_lden),
+    .ex_inst(ex_inst),
 
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_reg_wen                       (mem_reg_wen               ),

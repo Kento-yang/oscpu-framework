@@ -21,7 +21,7 @@ module icache #(
     input logic   [`PC_WIDTH-1:0]        if_pc,
 //core---icache
     input                                if_ic_valid_i                   ,
-    output                               if_ic_ready_o_r1                ,
+    output                               if_ic_ready_o_r                ,
     output        [`AXI_DATA_WIDTH-1:0]  if_ic_rdata_o                   ,
     input logic   [`AXI_ADDR_WIDTH-1:0]  if_ic_addr_i                    ,
     input             [   1:0]           if_ic_size                      ,
@@ -35,8 +35,9 @@ module icache #(
     output             [   1:0]          arb_ic_size                     ,
     input              [   1:0]          arb_ic_resp                     ,//读响应信号
 
-//
-    output logic                         hit
+    output logic                         hit,
+    output logic                         hit_r,
+    output logic                         hit_delay_o
 );
     //size/resp pass icache.
     assign arb_ic_size = `SIZE_D;//double word
@@ -62,15 +63,37 @@ module icache #(
     wire [I_TAG-1:0]    if_addr_tag     = if_pc[31:11];//addr 64bit, only low 32bit valid fot fetch inst
     wire [I_INDEX-1:0]  if_addr_index   = if_pc[10:4];
     wire [I_OFFSET-1:0] if_addr_offset  = if_pc[I_OFFSET-1:0];
+    logic [I_INDEX-1:0] if_addr_index_r;
+    //while hit but
+    wire  index_change = (if_addr_index_r != if_addr_index);
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            if_addr_index_r <= 0;
+        end else begin
+            if_addr_index_r <= if_addr_index;
+        end
+    end
  
     logic hit_way0, hit_way1;
+    //logic hit, hit_r;
     assign hit_way0 = ({1'b1, if_addr_tag } == way0_tag[if_addr_index] ) ? 1 : 0 ; //{valid,tag}
     assign hit_way1 = ({1'b1, if_addr_tag } == way1_tag[if_addr_index] ) ? 1 : 0 ; //{valid,tag}
     assign hit = hit_way0 | hit_way1;
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            hit_r <= hit;
+        end else begin
+            hit_r <= hit;
+        end
+    end
+
+    assign hit_delay_o = hit_r & hit;//align with sram rd
 
     //logic if_ic_ready_o;
     wire if_read_hs = if_ic_valid_i & if_ic_ready_o;
     wire axi_read_hs = arb_ic_valid_o & arb_ic_ready_i;
+
+    
 //------------------------------------------------------------------------------
 //  STATE MACHINE           
 //------------------------------------------------------------------------------
@@ -183,7 +206,7 @@ module icache #(
                 MISS:if_ic_ready_o <= 0;
                 REPLACE:begin
                         arb_ic_valid_o <= 1;
-                        arb_ic_addr_o <= if_ic_addr_i;
+                        arb_ic_addr_o <= {if_ic_addr_i[`AXI_ADDR_WIDTH-1:4],4'b0};//0x18 axi_rd error ! 0x10 inst need first instead of 0x18
                         if_ic_ready_o <= 0;
                 end
                 REFILL:begin
@@ -216,7 +239,7 @@ module icache #(
     // delay becausd of sram delay
     logic if_read_hs_r;
     logic arb_ic_valid_o, arb_ic_valid_o_r1, arb_ic_valid_o_r2;
-    logic if_ic_ready_o;
+    logic if_ic_ready_o,if_ic_ready_o_r1;
     always@(posedge clk or negedge rst_n)begin
         if(!rst_n)begin
            //if_ic_ready_o_r <= 0;
@@ -231,6 +254,7 @@ module icache #(
         end
     end
 
+    assign if_ic_ready_o_r = if_ic_ready_o_r1 && !index_change;
     assign arb_ic_valid_o_and_r = arb_ic_valid_o & arb_ic_valid_o_r1 & arb_ic_valid_o_r2;
                    
 //3.1 TAG equal! hit the cache and return the inst according the OFFSET.（valid == 1）
@@ -275,11 +299,11 @@ module icache #(
     logic [CACHE_LINE_WIDTH-1:0]     way0_rdata, way1_rdata;
     logic                            way0_cen,   way1_cen  ;
     logic                            way0_wen,   way1_wen  ;
-    logic [CACHE_ADDR_WIDTH-1:0]     way0_addr,  way1_addr ;
+    //logic [CACHE_ADDR_WIDTH-1:0]     way0_addr,  way1_addr ;
     logic [CACHE_LINE_WIDTH-1:0]     way0_wdata, way1_wdata;
     
-icache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .A(way0_addr), .D(way0_wdata) );
-icache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(way1_addr), .D(way1_wdata) );
+icache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .A(if_addr_index), .D(way0_wdata) );
+icache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(if_addr_index), .D(way1_wdata) );
 
 
 endmodule

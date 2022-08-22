@@ -49,7 +49,7 @@ module mem_wb (
   logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
   logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
   logic                              tem_csr_wen;
-
+  
   assign tem_inst = mem_inst;
   assign tem_reg_wen = mem_reg_wen;//inst相同只写回一次，避免一条指令执行多遍形成回环。。
   assign tem_reg_waddr = mem_reg_waddr;
@@ -73,6 +73,8 @@ module mem_wb (
     .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
                 wb_clint_ldst,wb_csr_wdata, wb_csr_waddr, wb_csr_wen})
   );
+
+
 
   
 endmodule

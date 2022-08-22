@@ -71,7 +71,7 @@ module ex_stage(
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen;
+    logic                               pipe_wen, pipe_wen_r;
     logic           [`PC_WIDTH-1:0]             tem_diff_pc;
     //(tem_diff_pc != ex_diff_pc)只有指令不一样的时候才能使能打拍，避免相同指令源寄存器到目标寄存器之间形成环。(rtthread 0x80004860 subw	a5,a6,a5)
     assign pipe_wen =  valid_id2ex && ready_ex2id /*&& (tem_diff_pc != ex_diff_pc)*/;//shake success with id_stage
@@ -84,13 +84,24 @@ module ex_stage(
     //logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt;
     logic   [`CSR_IMM_WIDTH-1:0]      ex_csr_zimm;    
     logic   [`DATA_WIDTH - 1:0]        ex_csr_rdata;
+    
+    //for ld-add adventure in icache. bubble_id_ex will flush the right pc in dummy(80000184).
+    //wire real_bubble_id_ex = bubble_id_ex && !(valid_id2ex & ready_ex2id);//protect the bubble last cycle flush the right pc.
 
+    //for bubble_id_ex destory the right pc in ld-add adventure.
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)
+            pipe_wen_r <= 0;
+        else
+            pipe_wen_r <= pipe_wen;
+    end
+    
 id_ex u_id_ex(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen                  ),
-    .bpu_bubble                        (bpu_bubble                    ),
+    .bpu_bubble                        (bpu_bubble                ),
     .bypass_bubble                     (bubble_id_ex              ),
 
     .id_inst                           (id_inst                   ),

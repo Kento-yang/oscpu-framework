@@ -56,7 +56,7 @@ mem_wb u_mem_wb(
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
     .pipe_wen                          (pipe_wen                  ),
-
+    
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_reg_waddr                     (mem_reg_waddr             ),
