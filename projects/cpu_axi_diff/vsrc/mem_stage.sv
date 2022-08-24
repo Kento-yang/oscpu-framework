@@ -4,6 +4,7 @@ module mem_stage(
     input                               rst_n                      ,
     input logic                         flush,
 //from exe stage
+    input pipe_idex_wen,
     input       [`INST_WIDTH-1:0]       ex_inst                    ,
     input                               ex_reg_wen                 ,
     input       [`REG_ADDR_WIDTH-1:0]   ex_reg_waddr               ,// register write address
@@ -29,6 +30,8 @@ module mem_stage(
     input  logic     [1:0]               mem_rw_resp_i,
     output logic [`AXI_DATA_WIDTH/8-1:0] mem_write_mask_o,
 //to next stage
+    output pipe_exmem_wen,
+
     output      [`INST_WIDTH-1:0]       mem_inst                   ,
     output                              mem_reg_wen                ,
     output      [`REG_ADDR_WIDTH-1:0]   mem_reg_waddr              ,// register write address
@@ -66,7 +69,7 @@ module mem_stage(
 //------------------------------------------------------------------------------
 //  EX-MEM REG  
 //------------------------------------------------------------------------------
-   wire                                pipe_wen = valid_ex2mem && ready_mem2ex;
+   assign pipe_exmem_wen = valid_ex2mem && ready_mem2ex;
    //logic    [`DATA_WIDTH-1:0]           ex_alu_res;
    logic    [`DATA_WIDTH-1:0]           mem_reg2_rdata;
 
@@ -75,7 +78,7 @@ ex_mem u_ex_mem(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-    .pipe_wen                          (pipe_wen                  ),
+    .pipe_wen                          (/*(mem_diff_pc == 'b1) ? pipe_idex_wen:*/ pipe_exmem_wen),
     
     .ex_inst                           (ex_inst                   ),
     .ex_reg_wen                        (ex_reg_wen                ),
@@ -211,7 +214,7 @@ ex_mem u_ex_mem(
 //------------------------------------------------------------------------------
     logic valid_mem2wb_r, ready_mem2ex_r;
 
-    assign valid_mem2wb = valid_mem2wb_r && lsu_valid ;//&& addr_axi;
+    assign valid_mem2wb = (valid_mem2wb_r && lsu_valid) || (mem_ldst_en && mem_valid_o && mem_ready_i) ;//&& addr_axi;
     assign ready_mem2ex = ready_mem2ex_r && lsu_valid ;//&& addr_axi;
 pipehandshake u_pipehandshake(
     .clk          ( clk          ),

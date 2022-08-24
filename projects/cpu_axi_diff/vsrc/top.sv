@@ -85,7 +85,7 @@ if_stage u_if_stage(
     .if_size                           (if_size                   ),
     .if_resp                           (if_resp                   ),
     .fetched                           (fetched                   ),
-
+    
     .iru_excp                          (iru_excp                  ),
     .iru_intr                          (iru_intr                    ),
     .iru_pc                            (iru_pc                    ),
@@ -164,6 +164,8 @@ if_stage u_if_stage(
 //handshake
 logic ready_ex2id ,valid_id2ex;
 
+logic pipe_ifid_wen;
+logic pipe_idex_wen;
 wire                   [`REG_BUS] regs[0 : 31]                           ;//for difftest
 id_stage u_id_stage(
     .clk                               (clk                       ),
@@ -191,6 +193,7 @@ id_stage u_id_stage(
     .ex_lsu_opt                        (ex_lsu_opt                ),
     .ex_lsu_lden(ex_lsu_lden),
     .ex_inst(ex_inst),
+    .pipe_idex_wen                     (pipe_idex_wen             ),
 
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_reg_wen                       (mem_reg_wen               ),
@@ -206,7 +209,8 @@ id_stage u_id_stage(
 
     .if_inst                           (if_inst                   ),
     .if_pc                             (if_pc                     ),
-
+    .if_ready                          (if_ready),
+    .pipe_ifid_wen(pipe_ifid_wen),
     .id_inst                           (id_inst                   ),
     .id_pc                             (id_pc                     ),
     .id_branch                         (id_branch                 ),
@@ -270,6 +274,7 @@ ex_stage u_ex_stage(
     .bp_ld_st_ctrl                     (bp_ld_st_ctrl             ),
     .mem_regld                         (mem_regld                 ),
 
+    .pipe_ifid_wen(pipe_ifid_wen),
     .id_inst                           (id_inst                   ),
     .id_pc                             (id_pc                     ),
     .id_branch                         (id_branch                 ),
@@ -294,6 +299,7 @@ ex_stage u_ex_stage(
     .id_csr_zimm                       (id_csr_zimm               ),
     .id_csr_wen                        (id_csr_wen                ),
 
+    .pipe_idex_wen                     (pipe_idex_wen             ),
     .ex_pc                             (ex_pc                     ),
     .ex_branch                         (ex_branch                 ),
     .ex_zero                           (ex_zero                   ),
@@ -333,13 +339,14 @@ ex_stage u_ex_stage(
     logic mem_lsu_valid;
     logic mem_lsu_lden,mem_lsu_sten;
     logic mem_clint_ldst;
-
+    logic pipe_exmem_wen;
 //CSR
 mem_stage u_mem_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
 
+    .pipe_idex_wen(pipe_idex_wen),
     .ex_inst                           (ex_inst                   ),
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_reg_waddr                      (ex_reg_waddr              ),
@@ -365,6 +372,7 @@ mem_stage u_mem_stage(
     .mem_rw_resp_i                     (mem_resp                  ),
     .mem_write_mask_o                  (mem_wmask                 ),
 
+    .pipe_exmem_wen(pipe_exmem_wen),
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_reg_waddr                     (mem_reg_waddr             ),
@@ -408,6 +416,7 @@ wb_stage u_wb_stage(
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
 
+    .pipe_exmem_wen(pipe_exmem_wen),
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_reg_waddr                     (mem_reg_waddr             ),

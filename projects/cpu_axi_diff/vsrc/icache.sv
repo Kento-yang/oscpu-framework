@@ -302,8 +302,8 @@ module icache #(
     //logic [CACHE_ADDR_WIDTH-1:0]     way0_addr,  way1_addr ;
     logic [CACHE_LINE_WIDTH-1:0]     way0_wdata, way1_wdata;
     
-icache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .A(if_addr_index), .D(way0_wdata) );
-icache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(if_addr_index), .D(way1_wdata) );
+cache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .A(if_addr_index), .D(way0_wdata) );
+cache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(if_addr_index), .D(way1_wdata) );
 
 
 endmodule

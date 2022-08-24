@@ -12,6 +12,7 @@ module ex_stage(
 //from lsu
     input logic  [`DATA_WIDTH-1:0]           mem_regld    ,
 
+    input  pipe_ifid_wen,
     input            [`INST_WIDTH-1:0]          id_inst   ,
     input            [`PC_WIDTH-1:0]            id_pc   ,
     input                                       id_branch,
@@ -36,6 +37,7 @@ module ex_stage(
     input logic   [`CSR_IMM_WIDTH-1:0]      id_csr_zimm,    
     input logic                              id_csr_wen,
 
+    output    logic                      pipe_idex_wen,
     output    logic   [`PC_WIDTH-1:0]     ex_pc,
     output logic                       ex_branch,                          // ex_branch type 
     output logic                       ex_zero,                            // alu result is ex_zero
@@ -71,10 +73,10 @@ module ex_stage(
 //------------------------------------------------------------------------------
 //  ID-EX REG  
 //------------------------------------------------------------------------------
-    logic                               pipe_wen, pipe_wen_r;
+    logic                                pipe_wen_r;
     logic           [`PC_WIDTH-1:0]             tem_diff_pc;
     //(tem_diff_pc != ex_diff_pc)只有指令不一样的时候才能使能打拍，避免相同指令源寄存器到目标寄存器之间形成环。(rtthread 0x80004860 subw	a5,a6,a5)
-    assign pipe_wen =  valid_id2ex && ready_ex2id /*&& (tem_diff_pc != ex_diff_pc)*/;//shake success with id_stage
+    assign pipe_idex_wen =  valid_id2ex && ready_ex2id /*&& (tem_diff_pc != ex_diff_pc)*/;//shake success with id_stage
 
 
     
@@ -93,14 +95,14 @@ module ex_stage(
         if(!rst_n)
             pipe_wen_r <= 0;
         else
-            pipe_wen_r <= pipe_wen;
+            pipe_wen_r <= pipe_idex_wen;
     end
     
 id_ex u_id_ex(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-    .pipe_wen                          (pipe_wen                  ),
+    .pipe_wen                          (/*(ex_diff_pc == 'b1) ? pipe_ifid_wen:*/pipe_idex_wen),
     .bpu_bubble                        (bpu_bubble                ),
     .bypass_bubble                     (bubble_id_ex              ),
 

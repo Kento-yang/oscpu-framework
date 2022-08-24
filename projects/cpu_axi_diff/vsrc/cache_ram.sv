@@ -1,6 +1,6 @@
 //merge 2 SRAM to 1 icache ram.
 `include "rvseed_defines.sv"
-module icache_ram(
+module cache_ram(
     Q, CLK, CEN, WEN, A, D
 );
 parameter Bits = 128;

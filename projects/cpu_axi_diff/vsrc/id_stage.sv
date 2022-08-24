@@ -3,7 +3,7 @@ module id_stage(
     input                                     clk      ,
     input                                     rst_n    ,
     input logic                         flush,
-    //input                                     pipe_wen ,
+    //input                                     pipe_ifid_wen ,
     //input                                     bubble,
 //from IF bpu
     input logic                       bpu_bubble,
@@ -26,6 +26,7 @@ module id_stage(
     input logic            [`PC_WIDTH-1:0]      ex_diff_pc,//for ld-add adventure use
     input logic                                 ex_lsu_lden,
     input logic   [`INST_WIDTH-1:0]             ex_inst,
+    input logic                                 pipe_idex_wen,
 //from ex_mem   
     input logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,              // register write address   
     input logic                                mem_reg_wen,
@@ -44,6 +45,9 @@ module id_stage(
     input         [`INST_WIDTH-1:0]           if_inst  ,
     input         [`PC_WIDTH-1:0]             if_pc    ,
 
+    input                                     if_ready ,
+
+    output pipe_ifid_wen,
     //output logic  [`INST_WIDTH-1:0]           id_inst   ,
     //output logic  [`PC_WIDTH-1:0]             id_pc     , 
     //output logic  [`PC_WIDTH-1:0]             id_diff_pc   
@@ -98,25 +102,25 @@ module id_stage(
 
     //logic   [`PC_WIDTH-1:0]     if_pc    ;
     //logic   [`PC_WIDTH-1:0]     id_pc    ;
-    //logic pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
+    //logic pipe_ifid_wen = ~bubble_id_ex && valid_if2id && ready_id2if;
 
-    logic pipe_wen,pipe_wen_r;
+    logic pipe_wen_r;
 
-    assign pipe_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;//bubble_id_ex = 1 need stall the if-id reg.
+    assign pipe_ifid_wen = ~bubble_id_ex && valid_if2id && ready_id2if ;//bubble_id_ex = 1 need stall the if-id reg.
 
     //for bubble_id_ex destory the right pc in ld-add adventure.
     always@(posedge clk or negedge rst_n)begin
         if(!rst_n)
             pipe_wen_r <= 0;
         else
-            pipe_wen_r <= pipe_wen;
+            pipe_wen_r <= pipe_ifid_wen;
     end
 
 if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-    .pipe_wen                          ( pipe_wen   ),//if bypass bubble,if_id pipe stall
+    .pipe_wen                          ( pipe_ifid_wen   ),//if bypass bubble,if_id pipe stall
     .bubble                            (bpu_bubble                ),//from bpu
 
     .if_inst                           (if_inst                   ),
@@ -289,7 +293,7 @@ mux_bypass#(
 logic valid_id2ex_r;
 //当LD-ADD冒险发生时，如果mem成功读到数据，并且需要旁路的时候，valid可以为高
 //需要旁路通过bubble_id_ex判断，bubble_id_ex虽然只有一个cycle脉冲，但是会让ex的diff_pc一直为1，用此信号告知发生了LD-ADD型冒险。
-assign valid_id2ex = valid_id2ex_r || (mem_valid && mem_ready && (mem_grant == 1) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
+assign valid_id2ex = valid_id2ex_r || ((mem_valid && mem_ready /*&& (mem_grant == 1)*/) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
 pipehandshake u1_pipehandshake(
     .clk          ( clk          ),
     .rst_n        ( rst_n        ),
