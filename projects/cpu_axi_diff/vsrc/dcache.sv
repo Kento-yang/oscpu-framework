@@ -41,7 +41,7 @@ module dcache #(
     assign arb_dc_size_o = mem_dc_size_i;//mem --> axi    
     assign mem_dc_resp_o = arb_dc_resp_i;//axi -->mem    
     assign arb_dc_wmask_o = mem_dc_wmask_i;
-    logic [63:0] way_wmask;
+    /*logic [63:0] way_wmask;
   always_comb begin
     case (mem_dc_wmask_i)
         8'b0000_0001: way_wmask = 64'h0000_0000_0000_00FF;
@@ -50,7 +50,7 @@ module dcache #(
         8'b1111_1111: way_wmask = 64'hFFFF_FFFF_FFFF_FFFF;
       default:  way_wmask = 64'b0;
     endcase
-  end
+  end*/
     localparam RAM_WIDTH = 128, RAM_DEPTH = 64;
 
     localparam IDLE    = 3'b000,
@@ -171,6 +171,7 @@ module dcache #(
             mem_dc_ready_o <= 0;
             arb_dc_valid_o <= 0;
             arb_dc_addr_o <= 0;
+            //arb_dc_rw_req_o <= 0;
             for(i = 0; i < 64; i++)begin
                 way0_tag[i][D_TAG: D_TAG-1]<= 2'b00;
                 way1_tag[i][D_TAG: D_TAG-1]<= 2'b00;
@@ -190,10 +191,12 @@ module dcache #(
                 IDLE: begin
                     mem_dc_ready_o <= 0;
                     arb_dc_valid_o <= 0;
+                    arb_dc_rw_req_o <= 1'b0;//read
                     way0_cen <= 0; way0_wen <= 1;
                     way1_cen <= 0; way1_wen <= 1;
                 end
                 LOOK_UP:begin
+                    arb_dc_rw_req_o <= 1'b0;//read
                     if(hit_way0) begin//read way 0 
                         mem_dc_ready_o <= 0;
                         way0_cen <= 0; way0_wen <= 1;
@@ -214,55 +217,188 @@ module dcache #(
                 WRCACHE:begin//
                     way0_wdata <= 128'b0;
                     way1_wdata <= 128'b0;
-                    if(hit_way0) begin//write way0 
+//==================write way0========================
+                    if(hit_way0) begin
                         way0_tag[mem_addr_index][D_TAG] <= 1;
                         way0_cen <= 0; way0_wen <= 0;
-                        way1_cen <= 0; way1_wen <= 0;
-                        case(mem_addr_offset[D_OFFSET-1:0])
-                            4'b0000: way0_wdata <= {rpl_cacheline_buf0[127:64],  (mem_dc_data_write_i[63:0] & way_wmask)};
-                            4'b0001: way0_wdata <= {rpl_cacheline_buf0[127:72],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[7:0]};
-                            4'b0010: way0_wdata <= {rpl_cacheline_buf0[127:80],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[15:0]};
-                            4'b0011: way0_wdata <= {rpl_cacheline_buf0[127:88],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[23:0]};
-                            4'b0100: way0_wdata <= {rpl_cacheline_buf0[127:96],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[31:0]};
-                            4'b0101: way0_wdata <= {rpl_cacheline_buf0[127:104], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[39:0]};
-                            4'b0110: way0_wdata <= {rpl_cacheline_buf0[127:112], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[47:0]};
-                            4'b0111: way0_wdata <= {rpl_cacheline_buf0[127:120], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[55:0]};
-                            4'b1000: way0_wdata <= {(mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf0[63:0]};
-                            4'b1001: way0_wdata <= {(mem_dc_data_write_i[55:0] & way_wmask), rpl_cacheline_buf0[63:0], 8'b0};
-                            4'b1010: way0_wdata <= {(mem_dc_data_write_i[47:0] & way_wmask), rpl_cacheline_buf0[63:0], 16'b0};
-                            4'b1011: way0_wdata <= {(mem_dc_data_write_i[39:0] & way_wmask), rpl_cacheline_buf0[63:0], 24'b0};
-                            4'b1100: way0_wdata <= {(mem_dc_data_write_i[31:0] & way_wmask), rpl_cacheline_buf0[95:0], 32'b0};
-                            4'b1101: way0_wdata <= {(mem_dc_data_write_i[23:0] & way_wmask), rpl_cacheline_buf0[95:0], 40'b0};
-                            4'b1110: way0_wdata <= {(mem_dc_data_write_i[15:0] & way_wmask), rpl_cacheline_buf0[95:0], 48'b0};
-                            4'b1111: way0_wdata <= {(mem_dc_data_write_i[7:0]  & way_wmask), rpl_cacheline_buf0[95:0], 56'b0};
-                            default: ;
-                        endcase
-                    end
+                        way1_cen <= 0; way1_wen <= 1;
+                        if(mem_dc_wmask_i == 8'b1111_1111)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way0_wdata <= {rpl_cacheline_buf0[127:64],  (mem_dc_data_write_i[63:0])};
+                                4'b0001: way0_wdata <= {rpl_cacheline_buf0[127:72],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[7:0]};
+                                4'b0010: way0_wdata <= {rpl_cacheline_buf0[127:80],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[15:0]};
+                                4'b0011: way0_wdata <= {rpl_cacheline_buf0[127:88],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[23:0]};
+                                4'b0100: way0_wdata <= {rpl_cacheline_buf0[127:96],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[31:0]};
+                                4'b0101: way0_wdata <= {rpl_cacheline_buf0[127:104], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[39:0]};
+                                4'b0110: way0_wdata <= {rpl_cacheline_buf0[127:112], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[47:0]};
+                                4'b0111: way0_wdata <= {rpl_cacheline_buf0[127:120], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[55:0]};
+                                4'b1000: way0_wdata <= {(mem_dc_data_write_i[63:0]), rpl_cacheline_buf0[63:0]};
+                                4'b1001: way0_wdata <= {(mem_dc_data_write_i[55:0]), rpl_cacheline_buf0[71:0]};
+                                4'b1010: way0_wdata <= {(mem_dc_data_write_i[47:0]), rpl_cacheline_buf0[79:0]};
+                                4'b1011: way0_wdata <= {(mem_dc_data_write_i[39:0]), rpl_cacheline_buf0[87:0]};
+                                4'b1100: way0_wdata <= {(mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[95:0]};
+                                4'b1101: way0_wdata <= {(mem_dc_data_write_i[23:0]), rpl_cacheline_buf0[103:0]};
+                                4'b1110: way0_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[111:0]};
+                                4'b1111: way0_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf0[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        else if(mem_dc_wmask_i == 8'b0000_1111)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way0_wdata <= {rpl_cacheline_buf0[127:32],  (mem_dc_data_write_i[31:0])};
+                                4'b0001: way0_wdata <= {rpl_cacheline_buf0[127:40],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[7:0]};
+                                4'b0010: way0_wdata <= {rpl_cacheline_buf0[127:48],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[15:0]};
+                                4'b0011: way0_wdata <= {rpl_cacheline_buf0[127:56],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[23:0]};
+                                4'b0100: way0_wdata <= {rpl_cacheline_buf0[127:64],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[31:0]};
+                                4'b0101: way0_wdata <= {rpl_cacheline_buf0[127:72],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[39:0]};
+                                4'b0110: way0_wdata <= {rpl_cacheline_buf0[127:80],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[47:0]};
+                                4'b0111: way0_wdata <= {rpl_cacheline_buf0[127:88],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[55:0]};
+                                4'b1000: way0_wdata <= {rpl_cacheline_buf0[127:96],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[63:0]};
+                                4'b1001: way0_wdata <= {rpl_cacheline_buf0[127:104], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[71:0]};
+                                4'b1010: way0_wdata <= {rpl_cacheline_buf0[127:112], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[79:0]};
+                                4'b1011: way0_wdata <= {rpl_cacheline_buf0[127:120], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[87:0]};
+                                4'b1100: way0_wdata <= {(mem_dc_data_write_i[31:0]), rpl_cacheline_buf0[95:0]};
+                                4'b1101: way0_wdata <= {(mem_dc_data_write_i[23:0]), rpl_cacheline_buf0[103:0]};
+                                4'b1110: way0_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[111:0]};
+                                4'b1111: way0_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf0[119:0]};
+                                default: ;
+                            endcase
+                            end                       
+                        else if(mem_dc_wmask_i == 8'b0000_0011)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way0_wdata <= {rpl_cacheline_buf0[127:16],  (mem_dc_data_write_i[15:0])};
+                                4'b0001: way0_wdata <= {rpl_cacheline_buf0[127:24],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[7:0]};
+                                4'b0010: way0_wdata <= {rpl_cacheline_buf0[127:32],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[15:0]};
+                                4'b0011: way0_wdata <= {rpl_cacheline_buf0[127:40],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[23:0]};
+                                4'b0100: way0_wdata <= {rpl_cacheline_buf0[127:48],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[31:0]};
+                                4'b0101: way0_wdata <= {rpl_cacheline_buf0[127:56],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[39:0]};
+                                4'b0110: way0_wdata <= {rpl_cacheline_buf0[127:64],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[47:0]};
+                                4'b0111: way0_wdata <= {rpl_cacheline_buf0[127:72],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[55:0]};
+                                4'b1000: way0_wdata <= {rpl_cacheline_buf0[127:80],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[63:0]};
+                                4'b1001: way0_wdata <= {rpl_cacheline_buf0[127:88],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[71:0]};
+                                4'b1010: way0_wdata <= {rpl_cacheline_buf0[127:96],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[79:0]};
+                                4'b1011: way0_wdata <= {rpl_cacheline_buf0[127:104], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[87:0]};
+                                4'b1100: way0_wdata <= {rpl_cacheline_buf0[127:112], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[95:0]};
+                                4'b1101: way0_wdata <= {rpl_cacheline_buf0[127:120], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[103:0]};
+                                4'b1110: way0_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf0[111:0]};
+                                4'b1111: way0_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf0[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        else if(mem_dc_wmask_i == 8'b0000_0001)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way0_wdata <= {rpl_cacheline_buf0[127:8],  (mem_dc_data_write_i[7:0])};
+                                4'b0001: way0_wdata <= {rpl_cacheline_buf0[127:16],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[7:0]};
+                                4'b0010: way0_wdata <= {rpl_cacheline_buf0[127:24],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[15:0]};
+                                4'b0011: way0_wdata <= {rpl_cacheline_buf0[127:32],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[23:0]};
+                                4'b0100: way0_wdata <= {rpl_cacheline_buf0[127:40],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[31:0]};
+                                4'b0101: way0_wdata <= {rpl_cacheline_buf0[127:48],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[39:0]};
+                                4'b0110: way0_wdata <= {rpl_cacheline_buf0[127:56],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[47:0]};
+                                4'b0111: way0_wdata <= {rpl_cacheline_buf0[127:64],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[55:0]};
+                                4'b1000: way0_wdata <= {rpl_cacheline_buf0[127:72],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[63:0]};
+                                4'b1001: way0_wdata <= {rpl_cacheline_buf0[127:80],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[71:0]};
+                                4'b1010: way0_wdata <= {rpl_cacheline_buf0[127:88],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[79:0]};
+                                4'b1011: way0_wdata <= {rpl_cacheline_buf0[127:96],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[87:0]};
+                                4'b1100: way0_wdata <= {rpl_cacheline_buf0[127:104], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[95:0]};
+                                4'b1101: way0_wdata <= {rpl_cacheline_buf0[127:112], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[103:0]};
+                                4'b1110: way0_wdata <= {rpl_cacheline_buf0[127:120], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf0[111:0]};
+                                4'b1111: way0_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf0[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        end
+//==================write way1========================
                     else if(hit_way1)begin//write way1 
                         way1_tag[mem_addr_index][D_TAG] <= 1;
-                        way0_cen <= 0; way0_wen <= 0;
+                        way0_cen <= 0; way0_wen <= 1;
                         way1_cen <= 0; way1_wen <= 0;
-                        case(mem_addr_offset[D_OFFSET-1:0])
-                            4'b0000: way1_wdata <= {rpl_cacheline_buf1[127:64],  (mem_dc_data_write_i[63:0] & way_wmask)};
-                            4'b0001: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[7:0]};
-                            4'b0010: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[15:0]};
-                            4'b0011: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[23:0]};
-                            4'b0100: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[31:0]};
-                            4'b0101: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[39:0]};
-                            4'b0110: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[47:0]};
-                            4'b0111: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[55:0]};
-                            4'b1000: way1_wdata <= {(mem_dc_data_write_i[63:0] & way_wmask), rpl_cacheline_buf1[63:0]};
-                            4'b1001: way1_wdata <= {(mem_dc_data_write_i[55:0] & way_wmask), rpl_cacheline_buf1[63:0], 8'b0};
-                            4'b1010: way1_wdata <= {(mem_dc_data_write_i[47:0] & way_wmask), rpl_cacheline_buf1[63:0], 16'b0};
-                            4'b1011: way1_wdata <= {(mem_dc_data_write_i[39:0] & way_wmask), rpl_cacheline_buf1[63:0], 24'b0};
-                            4'b1100: way1_wdata <= {(mem_dc_data_write_i[31:0] & way_wmask), rpl_cacheline_buf1[95:0], 32'b0};
-                            4'b1101: way1_wdata <= {(mem_dc_data_write_i[23:0] & way_wmask), rpl_cacheline_buf1[95:0], 40'b0};
-                            4'b1110: way1_wdata <= {(mem_dc_data_write_i[15:0] & way_wmask), rpl_cacheline_buf1[95:0], 48'b0};
-                            4'b1111: way1_wdata <= {(mem_dc_data_write_i[7:0]  & way_wmask), rpl_cacheline_buf1[95:0], 56'b0};
-                            default:;
-                        endcase
-                    end
-                end
+                        if(mem_dc_wmask_i == 8'b1111_1111)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way1_wdata <= {rpl_cacheline_buf1[127:64],  (mem_dc_data_write_i[63:0])};
+                                4'b0001: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[7:0]};
+                                4'b0010: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[15:0]};
+                                4'b0011: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[23:0]};
+                                4'b0100: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[31:0]};
+                                4'b0101: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[39:0]};
+                                4'b0110: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[47:0]};
+                                4'b0111: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[55:0]};
+                                4'b1000: way1_wdata <= {(mem_dc_data_write_i[63:0]), rpl_cacheline_buf1[63:0]};
+                                4'b1001: way1_wdata <= {(mem_dc_data_write_i[55:0]), rpl_cacheline_buf1[71:0]};
+                                4'b1010: way1_wdata <= {(mem_dc_data_write_i[47:0]), rpl_cacheline_buf1[79:0]};
+                                4'b1011: way1_wdata <= {(mem_dc_data_write_i[39:0]), rpl_cacheline_buf1[87:0]};
+                                4'b1100: way1_wdata <= {(mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[95:0]};
+                                4'b1101: way1_wdata <= {(mem_dc_data_write_i[23:0]), rpl_cacheline_buf1[103:0]};
+                                4'b1110: way1_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[111:0]};
+                                4'b1111: way1_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf1[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        else if(mem_dc_wmask_i == 8'b0000_1111)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way1_wdata <= {rpl_cacheline_buf1[127:32],  (mem_dc_data_write_i[31:0])};
+                                4'b0001: way1_wdata <= {rpl_cacheline_buf1[127:40],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[7:0]};
+                                4'b0010: way1_wdata <= {rpl_cacheline_buf1[127:48],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[15:0]};
+                                4'b0011: way1_wdata <= {rpl_cacheline_buf1[127:56],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[23:0]};
+                                4'b0100: way1_wdata <= {rpl_cacheline_buf1[127:64],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[31:0]};
+                                4'b0101: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[39:0]};
+                                4'b0110: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[47:0]};
+                                4'b0111: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[55:0]};
+                                4'b1000: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[63:0]};
+                                4'b1001: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[71:0]};
+                                4'b1010: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[79:0]};
+                                4'b1011: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[87:0]};
+                                4'b1100: way1_wdata <= {(mem_dc_data_write_i[31:0]), rpl_cacheline_buf1[95:0]};
+                                4'b1101: way1_wdata <= {(mem_dc_data_write_i[23:0]), rpl_cacheline_buf1[103:0]};
+                                4'b1110: way1_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[111:0]};
+                                4'b1111: way1_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf1[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        else if(mem_dc_wmask_i == 8'b0000_0011)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way1_wdata <= {rpl_cacheline_buf1[127:16],  (mem_dc_data_write_i[15:0])};
+                                4'b0001: way1_wdata <= {rpl_cacheline_buf1[127:24],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[7:0]};
+                                4'b0010: way1_wdata <= {rpl_cacheline_buf1[127:32],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[15:0]};
+                                4'b0011: way1_wdata <= {rpl_cacheline_buf1[127:40],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[23:0]};
+                                4'b0100: way1_wdata <= {rpl_cacheline_buf1[127:48],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[31:0]};
+                                4'b0101: way1_wdata <= {rpl_cacheline_buf1[127:56],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[39:0]};
+                                4'b0110: way1_wdata <= {rpl_cacheline_buf1[127:64],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[47:0]};
+                                4'b0111: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[55:0]};
+                                4'b1000: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[63:0]};
+                                4'b1001: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[71:0]};
+                                4'b1010: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[79:0]};
+                                4'b1011: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[87:0]};
+                                4'b1100: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[95:0]};
+                                4'b1101: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[103:0]};
+                                4'b1110: way1_wdata <= {(mem_dc_data_write_i[15:0]), rpl_cacheline_buf1[111:0]};
+                                4'b1111: way1_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf1[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        else if(mem_dc_wmask_i == 8'b0000_0001)begin
+                            case(mem_addr_offset[D_OFFSET-1:0])
+                                4'b0000: way1_wdata <= {rpl_cacheline_buf1[127:8],   (mem_dc_data_write_i[7:0])};
+                                4'b0001: way1_wdata <= {rpl_cacheline_buf1[127:16],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[7:0]};
+                                4'b0010: way1_wdata <= {rpl_cacheline_buf1[127:24],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[15:0]};
+                                4'b0011: way1_wdata <= {rpl_cacheline_buf1[127:32],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[23:0]};
+                                4'b0100: way1_wdata <= {rpl_cacheline_buf1[127:40],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[31:0]};
+                                4'b0101: way1_wdata <= {rpl_cacheline_buf1[127:48],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[39:0]};
+                                4'b0110: way1_wdata <= {rpl_cacheline_buf1[127:56],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[47:0]};
+                                4'b0111: way1_wdata <= {rpl_cacheline_buf1[127:64],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[55:0]};
+                                4'b1000: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[63:0]};
+                                4'b1001: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[71:0]};
+                                4'b1010: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[79:0]};
+                                4'b1011: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[7:0]),  rpl_cacheline_buf1[87:0]};
+                                4'b1100: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[95:0]};
+                                4'b1101: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[103:0]};
+                                4'b1110: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[111:0]};
+                                4'b1111: way1_wdata <= {(mem_dc_data_write_i[7:0] ), rpl_cacheline_buf1[119:0]};
+                                default: ;
+                            endcase
+                            end
+                        end
+                    end  
+//=====================finish=========================               
                 READY:  begin
                         mem_dc_ready_o <= 1;
                         way0_cen <= 1; way0_wen <= 1;
@@ -270,6 +406,7 @@ module dcache #(
                 end
                 MISS:begin
                         arb_dc_valid_o <= 1;
+                        arb_dc_rw_req_o <= 1'b0;//read
                         arb_dc_addr_o <= {mem_dc_addr_i[`AXI_ADDR_WIDTH-1:4],4'b0};//0x18 axi_rd error ! 0x10 inst need first instead of 0x18
                     if(age == 0) begin//replace way 0.
                         rpl_en <= way0_tag[mem_addr_index][D_TAG:D_TAG-1];
@@ -287,6 +424,7 @@ module dcache #(
                         way0_wdata_buf <= arb_dc_data_read_i;
                         arb_dc_valid_o <= 1;
                         arb_dc_data_write_o <= rpl_cacheline_buf0;
+                        arb_dc_rw_req_o <= 1'b1;//write trans
                         arb_dc_addr_o <= {way0_tag[mem_addr_index][D_TAG-1 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
                         way0_tag[mem_addr_index][D_TAG:D_TAG-1] <= 2'b01;
                     end
@@ -294,6 +432,7 @@ module dcache #(
                         way1_wdata_buf <= arb_dc_data_read_i;
                         arb_dc_valid_o <= 1;
                         arb_dc_data_write_o <= rpl_cacheline_buf1;
+                        arb_dc_rw_req_o <= 1'b1;//write trans
                         arb_dc_addr_o <= {way1_tag[mem_addr_index][D_TAG-1 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
                         way1_tag[mem_addr_index][D_TAG:D_TAG-1] <= 2'b01;
                     end
@@ -307,7 +446,6 @@ module dcache #(
                         arb_dc_valid_o <= 0;
                         way1_tag[mem_addr_index][D_TAG:D_TAG-1] <= 2'b01;
                     end
-
                 end
                 REFILL:begin
                         arb_dc_valid_o <= 0;

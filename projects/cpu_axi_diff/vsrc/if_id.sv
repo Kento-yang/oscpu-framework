@@ -31,7 +31,7 @@ module if_id (
   ) if_id_reg(
   	.clk      (clk                 ),
     .rst_n    (rst_n               ),
-    .wen      (flush|pipe_wen            ),
+    .wen      (flush | pipe_wen            ),
     .din      (flush ? 0 :{tem_inst,  tem_pc ,tem_diff_pc }),
     .dout     ({id_inst,  id_pc ,id_diff_pc })
   );

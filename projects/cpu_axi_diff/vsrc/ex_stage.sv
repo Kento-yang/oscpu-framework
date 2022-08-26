@@ -4,6 +4,7 @@ module ex_stage(
     input                                     clk      ,
     input                                     rst_n    ,
     input logic                         flush,
+    input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
 //from bpu
     input logic                                 bpu_bubble,
 //from id data_bypass
@@ -105,6 +106,7 @@ id_ex u_id_ex(
     .pipe_wen                          (/*(ex_diff_pc == 'b1) ? pipe_ifid_wen:*/pipe_idex_wen),
     .bpu_bubble                        (bpu_bubble                ),
     .bypass_bubble                     (bubble_id_ex              ),
+    .cmt_wb_diff_pc(cmt_wb_diff_pc),
 
     .id_inst                           (id_inst                   ),
     .id_pc                             (id_pc                     ),

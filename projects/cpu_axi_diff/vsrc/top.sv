@@ -268,6 +268,7 @@ ex_stage u_ex_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
+    .cmt_wb_diff_pc(cmt_wb_diff_pc),
 
     .bpu_bubble                        (bpu_bubble                ),
     .bubble_id_ex                      (bubble_id_ex              ),
@@ -345,6 +346,7 @@ mem_stage u_mem_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
+    .cmt_wb_diff_pc(cmt_wb_diff_pc),
 
     .pipe_idex_wen(pipe_idex_wen),
     .ex_inst                           (ex_inst                   ),
@@ -415,7 +417,8 @@ wb_stage u_wb_stage(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-
+    .cmt_wb_diff_pc                    (cmt_wb_diff_pc),
+    
     .pipe_exmem_wen(pipe_exmem_wen),
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
@@ -569,7 +572,7 @@ csr_regs u_csr_regs(
     reg                      cmt_wen                    ;
     reg     [   7:0]         cmt_wdest                  ;
     reg     [`REG_BUS]       cmt_wdata                  ;
-    reg     [`REG_BUS]       cmt_pc                     ;
+    reg     [`REG_BUS]       cmt_pc,cmt_done_pc         ;
     reg     [  31:0]         cmt_inst                   ;
     reg                      cmt_valid                  ;
     reg                      cmt_skip                   ;
@@ -596,6 +599,7 @@ csr_regs u_csr_regs(
 //    $monitor("cmt_wdest is %h",cmt_wdest);
 //    $monitor("cmt_wdata is %h",cmt_wdata);
 //end
+//record have cmt PC value for flush residual
 logic [`PC_WIDTH-1:0] cmt_wb_diff_pc;
 always @(posedge clk) begin
   if (!rst_n) begin
@@ -604,6 +608,8 @@ always @(posedge clk) begin
     cmt_wb_diff_pc <= wb_diff_pc;
   end
 end
+
+
 
 always @(negedge clk) begin
   if (!rst_n) begin

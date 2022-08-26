@@ -6,6 +6,7 @@ module mem_wb (
   input                                     rst_n     ,
   input logic                         flush,
   input                                     pipe_wen ,
+  input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
 
   input            [`INST_WIDTH-1:0]           mem_inst   ,
   input                                     mem_reg_wen,
@@ -61,6 +62,9 @@ module mem_wb (
   assign tem_csr_waddr = mem_csr_waddr;
   assign tem_csr_wen = mem_csr_wen;
 
+   logic cmt_flush;
+  assign cmt_flush = (cmt_wb_diff_pc == tem_diff_pc) ? 1 : 0;
+
   Reg #(
     .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 3*`DATA_WIDTH + `LSU_OPT_WIDTH + `PC_WIDTH  +  `CSR_ADDR_WIDTH +1+1),
     .RESET_VAL  (0                    )
@@ -68,7 +72,7 @@ module mem_wb (
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
     .wen      (flush | pipe_wen                ),
-    .din      (flush ? 0 : {tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
+    .din      ((flush | cmt_flush) ? 0 : {tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
                 mem_clint_ldst,tem_csr_wdata, tem_csr_waddr, tem_csr_wen}),
     .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
                 wb_clint_ldst,wb_csr_wdata, wb_csr_waddr, wb_csr_wen})

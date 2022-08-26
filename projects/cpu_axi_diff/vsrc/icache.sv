@@ -93,7 +93,16 @@ module icache #(
     wire if_read_hs = if_ic_valid_i & if_ic_ready_o;
     wire axi_read_hs = arb_ic_valid_o & arb_ic_ready_i;
 
-    
+    logic [`AXI_ADDR_WIDTH-1:0]  if_ic_addr_i_r;
+    logic if_addr_change;
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            if_ic_addr_i_r <= 0;
+        end else begin
+            if_ic_addr_i_r <= if_ic_addr_i;
+        end
+    end
+    assign if_addr_change = (if_ic_addr_i_r != if_ic_addr_i) ? 1 : 0; 
 //------------------------------------------------------------------------------
 //  STATE MACHINE           
 //------------------------------------------------------------------------------
@@ -124,6 +133,10 @@ module icache #(
 
         REPLACE:if(axi_read_hs)
                     next_state = REFILL;
+                //else if(if_addr_change)//while addr change due to if jump, need re read the icache.
+                //    next_state = IDLE;
+                //else if(hit & if_ic_valid_i)
+                //    next_state = LOOK_UP;
                 else
                     next_state = REPLACE;
 

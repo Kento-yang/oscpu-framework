@@ -3,7 +3,8 @@ module wb_stage(
     input                                     clk      ,
     input                                     rst_n    ,
     input logic                         flush,
-
+    input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
+    
     input pipe_exmem_wen,
     input            [`INST_WIDTH-1:0]           mem_inst   ,
     input                                     mem_reg_wen,
@@ -57,7 +58,8 @@ mem_wb u_mem_wb(
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
     .pipe_wen                          (/*(wb_diff_pc == 'b1) ? pipe_exmem_wen:*/pipe_wen),
-    
+    .cmt_wb_diff_pc                    (cmt_wb_diff_pc),
+
     .mem_inst                          (mem_inst                  ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_reg_waddr                     (mem_reg_waddr             ),

@@ -7,6 +7,7 @@ module id_ex (
   input                                       pipe_wen       ,
   input                                       bpu_bubble,
   input                                       bypass_bubble,
+  input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
 
 
   input            [`INST_WIDTH-1:0]          id_inst   ,
@@ -88,7 +89,7 @@ module id_ex (
 
 
 //if ( bypass_bubble)=1 all=0 make a nop inst
-  assign tem_inst = id_inst;
+  assign tem_inst = ( bpu_bubble ||bypass_bubble) ? `INST_WIDTH'h13 :id_inst;
   assign tem_pc         = id_pc;
   assign tem_branch     = ( bpu_bubble ||bypass_bubble) ? 0 :id_branch;
   assign tem_jump       = ( bpu_bubble ||bypass_bubble) ? 0 :id_jump;
@@ -113,7 +114,8 @@ module id_ex (
   assign tem_csr_zimm =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_zimm;
   assign tem_csr_wen   =( bpu_bubble ||bypass_bubble) ? 0 :id_csr_wen;
 
-
+  logic cmt_flush;
+  assign cmt_flush = (cmt_wb_diff_pc == tem_diff_pc) ? 1 : 0;
 Reg #(
     .WIDTH      (`INST_WIDTH+2*`PC_WIDTH + 4 + 3*`REG_ADDR_WIDTH + 4*`DATA_WIDTH + 
                 `ALU_OP_WIDTH + `ALU_SRC_WIDTH + `LSU_OPT_WIDTH + 2 +  `CSR_ADDR_WIDTH+ `CSR_IMM_WIDTH +1),
@@ -122,7 +124,7 @@ Reg #(
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
     .wen      (flush |pipe_wen                ),
-    .din      (flush ? 0 :{tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
+    .din      ((flush| cmt_flush) ? 0 :{tem_inst, tem_pc, tem_branch, tem_jump,  tem_jalr,
               tem_reg_wen, tem_reg_waddr, tem_reg1_raddr, tem_reg2_raddr, tem_reg1_rdata, tem_reg2_rdata, tem_imm,
               tem_alu_op, tem_alu_src_sel, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,tem_diff_pc,
               tem_csr_rdata, tem_csr_waddr, tem_csr_zimm, tem_csr_wen}),

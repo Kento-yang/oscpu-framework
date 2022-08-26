@@ -4,6 +4,7 @@ module ex_mem (
   input                                       rst_n     ,
   input logic                         flush,
   input                                       pipe_wen       ,
+  input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
 
   input             [`INST_WIDTH-1:0]           ex_inst   ,
   input                                       ex_reg_wen,
@@ -63,6 +64,8 @@ module ex_mem (
   assign tem_csr_waddr = ex_csr_waddr;
   assign tem_csr_wen   = ex_csr_wen;
 
+  logic cmt_flush;
+  assign cmt_flush = (cmt_wb_diff_pc == ex_diff_pc) ? 1 : 0;
   Reg #(
     .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 3*`DATA_WIDTH + `LSU_OPT_WIDTH+ `PC_WIDTH + 2 + 2*`CSR_ADDR_WIDTH+ +1),
     .RESET_VAL  (0                    )
@@ -70,7 +73,7 @@ module ex_mem (
   	.clk      (clk                ),
     .rst_n    (rst_n              ),
     .wen      (flush | pipe_wen                ),
-    .din      (flush ? 0 :{tem_inst, tem_reg_wen,  tem_reg_waddr,  tem_alu_res, tem_reg2_rdata, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,ex_diff_pc,
+    .din      ((flush | cmt_flush) ? 0 :{tem_inst, tem_reg_wen,  tem_reg_waddr,  tem_alu_res, tem_reg2_rdata, tem_lsu_opt,tem_lsu_lden,tem_lsu_sten,ex_diff_pc,
                 tem_csr_wen, tem_csr_wdata, tem_csr_waddr}),
     .dout     ({mem_inst, mem_reg_wen,  mem_reg_waddr,  mem_alu_res, mem_reg2_rdata, mem_lsu_opt,mem_lsu_lden,mem_lsu_sten,mem_diff_pc,
                 mem_csr_wen, mem_csr_wdata, mem_csr_waddr})

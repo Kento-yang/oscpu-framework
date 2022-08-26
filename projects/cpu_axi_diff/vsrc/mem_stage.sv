@@ -3,6 +3,7 @@ module mem_stage(
     input                               clk                        ,
     input                               rst_n                      ,
     input logic                         flush,
+    input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
 //from exe stage
     input pipe_idex_wen,
     input       [`INST_WIDTH-1:0]       ex_inst                    ,
@@ -79,7 +80,8 @@ ex_mem u_ex_mem(
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
     .pipe_wen                          (/*(mem_diff_pc == 'b1) ? pipe_idex_wen:*/ pipe_exmem_wen),
-    
+    .cmt_wb_diff_pc                    (cmt_wb_diff_pc),
+
     .ex_inst                           (ex_inst                   ),
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_reg_waddr                      (ex_reg_waddr              ),
