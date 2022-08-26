@@ -191,8 +191,8 @@ assign next_pc = (iru_excp | iru_intr) ? iru_pc : next_pc_r;
 logic valid_o_next_r;
 assign valid_if2id = valid_o_next_r && (axi_if_handshake_done || ex_jump_flag);//(fetched || ex_jump_flag); 
 pipehandshake u_if_id_handshake(
-    .clk          ( clk          ),
-    .rst_n        ( rst_n        ),
+    .clk          ( clk            ),
+    .rst_n        ( rst_n          ),
     .valid_pre_i  ( flush ? 0 : 1  ),//for valid_if2id
     .ready_next_i ( ready_id2if ),
 

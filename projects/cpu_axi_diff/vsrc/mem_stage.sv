@@ -12,8 +12,8 @@ module mem_stage(
     input       [`DATA_WIDTH-1:0]       ex_alu_res                 ,
     input       [`DATA_WIDTH-1:0]       ex_regst                   ,//ex_regst
     input       [`LSU_OPT_WIDTH-1:0]    ex_lsu_opt                 ,
-    input ex_lsu_lden,
-    input ex_lsu_sten,
+    input                               ex_lsu_lden,
+    input                               ex_lsu_sten,
     input       [`PC_WIDTH-1:0]         ex_diff_pc                 ,
 //CSR
     input logic   [`DATA_WIDTH - 1:0]        ex_csr_wdata,
@@ -107,7 +107,6 @@ ex_mem u_ex_mem(
     .mem_lsu_sten(mem_lsu_sten),
     .mem_diff_pc                       (mem_diff_pc               ),
 
-    
     .mem_csr_wdata(mem_csr_wdata),
     .mem_csr_waddr(mem_csr_waddr),
     .mem_csr_wen(mem_csr_wen)

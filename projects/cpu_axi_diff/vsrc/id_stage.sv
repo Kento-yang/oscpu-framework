@@ -25,6 +25,7 @@ module id_stage(
     input logic   [`LSU_OPT_WIDTH-1 : 0]     ex_lsu_opt,
     input logic            [`PC_WIDTH-1:0]      ex_diff_pc,//for ld-add adventure use
     input logic                                 ex_lsu_lden,
+    input logic                                 ex_lsu_sten,
     input logic   [`INST_WIDTH-1:0]             ex_inst,
     input logic                                 pipe_idex_wen,
 //from ex_mem   
@@ -37,6 +38,7 @@ module id_stage(
     input logic                                mem_req,
     input logic                                mem_grant,
     input logic                                mem_lsu_lden,
+    input logic                                mem_lsu_sten,
 //from alu
     input logic    [`DATA_WIDTH-1:0]           ex_alu_res,
 //from mem lsu
@@ -120,7 +122,7 @@ if_id u1_if_id(
     .clk                               (clk                       ),
     .rst_n                             (rst_n                     ),
     .flush                             (flush                     ),
-    .pipe_wen                          ( pipe_ifid_wen   ),//if bypass bubble,if_id pipe stall
+    .pipe_wen                          (pipe_ifid_wen             ),//if bypass bubble,if_id pipe stall
     .bubble                            (bpu_bubble                ),//from bpu
 
     .if_inst                           (if_inst                   ),
@@ -158,8 +160,8 @@ decode u1_decode(
     .alu_op                            (id_alu_op                 ),
     .alu_src_sel                       (id_alu_src_sel            ),
     .lsu_opt                           (id_lsu_opt                ),
-    .lsu_lden(id_lsu_lden),
-    .lsu_sten(id_lsu_sten),
+    .lsu_lden                          (id_lsu_lden               ),
+    .lsu_sten                          (id_lsu_sten               ),
     .jalr                              (id_jalr                   ) 
 );
 
@@ -220,8 +222,6 @@ reg_file u1_reg_file(
     logic   [2:0 ]                     bypass_src1_ctl;
     logic   [2:0 ]                     bypass_src2_ctl;
     
-
-    
     //logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg_waddr;                // register write address
     //logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg1_raddr;
     //logic   [`REG_ADDR_WIDTH-1 : 0]    ex_reg2_raddr;
@@ -247,8 +247,9 @@ data_bypass u1_data_bypass(
     .reg_wen_mem                       (mem_reg_wen               ),
     .reg_wen_wb                        (wb_reg_wen                ),
 
-    .sten_ex                           (ex_lsu_opt                ),//ex阶段st指令
-    .sten_mem                          (mem_lsu_opt               ),//mem阶段st指令
+    .sten_id                           (id_lsu_sten),
+    .sten_ex                           (ex_lsu_sten                ),//ex阶段st指令
+    .sten_mem                          (mem_lsu_sten               ),//mem阶段st指令
     .lden_id                           (id_lsu_lden),
     .lden_ex                           (ex_lsu_lden            ),
     .lden_mem                          (mem_lsu_lden          ),//mem阶段ld指令
@@ -290,19 +291,23 @@ mux_bypass#(
     .id_arb_rdata                      (id_arb_rdata2             ) 
 );
 
-logic valid_id2ex_r;
+logic valid_id2ex_r ,ready_id2if_r ;
 //当LD-ADD冒险发生时，如果mem成功读到数据，并且需要旁路的时候，valid可以为高
 //需要旁路通过bubble_id_ex判断，bubble_id_ex虽然只有一个cycle脉冲，但是会让ex的diff_pc一直为1，用此信号告知发生了LD-ADD型冒险。
 assign valid_id2ex = valid_id2ex_r || ((mem_valid && mem_ready /*&& (mem_grant == 1)*/) && (mem_req == 0) && (ex_diff_pc =='b1)); //ld-add adventure solve, when mem read data and hs
-pipehandshake u1_pipehandshake(
-    .clk          ( clk          ),
-    .rst_n        ( rst_n        ),
+//ld-add冒险发生，等待ld在mem完成数据读取后（mem_valid & mem_ready）id才能接受新的指令.
+//assign ready_id2if = ready_id2if_r && ((mem_valid && mem_ready && mem_lsu_lden && mem_reg_wen && (mem_reg_waddr != 5'd0) && ((mem_reg_waddr == id_reg1_raddr ) || (mem_reg_waddr == id_reg2_raddr)) ) || !mem_lsu_lden)
 
-    .valid_pre_i  ( flush? 0:valid_if2id  ),
-    .ready_next_i ( ready_ex2id ),
 
-    .valid_o_next ( valid_id2ex_r ),
-    .ready_o_pre  ( ready_id2if  )
-);
+assign ready_id2if = (~valid_id2ex_r || ready_ex2id) && !(ex_diff_pc == 'b1) ;//pre-fetch   A + ~AB = A+B
+
+always@(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        valid_id2ex_r <= 0;
+    else if(ready_id2if && flush) //ready_next_i
+        valid_id2ex_r <= 0; 
+    else if(ready_id2if && !flush) //ready_next_i
+        valid_id2ex_r <= valid_if2id; 
+end
 
 endmodule

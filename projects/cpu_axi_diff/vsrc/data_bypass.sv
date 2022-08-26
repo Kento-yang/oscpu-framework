@@ -22,8 +22,9 @@ module data_bypass(
     input                           reg_wen_mem              ,
     input                           reg_wen_wb              ,
 
-    input   [`LSU_OPT_WIDTH-1:0]    sten_ex           ,//ex阶段st指令
-    input   [`LSU_OPT_WIDTH-1:0]    sten_mem           ,//mem阶段st指令
+    input                           sten_id             ,
+    input                           sten_ex           ,//ex阶段st指令
+    input                           sten_mem           ,//mem阶段st指令
     input                           lden_id,
     input                           lden_ex,
     input                           lden_mem           ,//mem阶段ld指令
@@ -48,14 +49,15 @@ module data_bypass(
     //在总线中，这块会有问题，Lbu a0，a0由于总线执行一次指令较长，会产生假bubble
     //解决办法：让lden_ex改为lden_ex && lden_id 不解决LD-LD类型冒险。
     //但引入lden_ex && !lden_id无法解决ld-ld型冒险，需要保证ex阶段写addr和读addr不同。
-    assign bubble_id_ex = (lden_ex && !lden_id && reg_wen_ex && (reg_waddr_ex != 5'd0) && ( (reg_waddr_ex == reg1_raddr_id ) || (reg_waddr_ex == reg2_raddr_id)))
+    //LD-ST冒险不在这解决！！
+    assign bubble_id_ex = (lden_ex && (!lden_id && !sten_id) && reg_wen_ex && (reg_waddr_ex != 5'd0) && ( (reg_waddr_ex == reg1_raddr_id ) || (reg_waddr_ex == reg2_raddr_id)))
                         || (lden_ex && lden_id && (reg_waddr_ex == reg1_raddr_id))//需停顿一拍，LD的源寄存器地址在reg1,reg2是st用的数据，不需要判断。
                         ;
 
     //RTthread：LD-LD型冒险解决：
     //assign bubble_ex_mem = lden_mem && (reg_waddr_mem != 5'd0) && ( (reg_waddr_mem == reg1_raddr_ex ) || (reg_waddr_mem == reg2_raddr_ex));
     //ld-st mem2ex
-    assign bp_ld_st_ctrl = (lden_mem && sten_ex[0] && (sten_ex != `LSU_NOP))//mem_wb ld / ex_mem st
+    assign bp_ld_st_ctrl = (lden_mem && sten_ex )//mem_wb ld / ex_mem st
                             && reg_wen_mem && (reg_waddr_mem != 5'd0) 
                             && (reg_waddr_mem != reg1_raddr_ex ) && (reg_waddr_mem == reg2_raddr_ex) ;//st
     

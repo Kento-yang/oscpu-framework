@@ -191,6 +191,7 @@ id_stage u_id_stage(
     .ex_reg_wen                        (ex_reg_wen                ),
     .ex_diff_pc                        (ex_diff_pc                ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
+    .ex_lsu_sten(ex_lsu_sten),
     .ex_lsu_lden(ex_lsu_lden),
     .ex_inst(ex_inst),
     .pipe_idex_wen                     (pipe_idex_wen             ),
@@ -206,6 +207,7 @@ id_stage u_id_stage(
     .ex_alu_res                        (ex_alu_res                ),
     .mem_regld                         (mem_regld                 ),
     .mem_lsu_lden(mem_lsu_lden),
+    .mem_lsu_sten(mem_lsu_sten),
 
     .if_inst                           (if_inst                   ),
     .if_pc                             (if_pc                     ),
