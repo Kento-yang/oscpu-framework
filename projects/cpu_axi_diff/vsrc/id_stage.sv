@@ -29,6 +29,7 @@ module id_stage(
     input logic   [`INST_WIDTH-1:0]             ex_inst,
     input logic                                 pipe_idex_wen,
 //from ex_mem   
+    input   logic  [`INST_WIDTH-1:0]           mem_inst   ,
     input logic    [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,              // register write address   
     input logic                                mem_reg_wen,
     input logic    [`LSU_OPT_WIDTH-1 : 0]      mem_lsu_opt,
@@ -233,7 +234,8 @@ reg_file u1_reg_file(
 data_bypass u1_data_bypass(
     .id_inst(id_inst),
     .ex_inst(ex_inst),
-
+    .mem_inst(mem_inst),
+    
     .reg1_raddr_id                     (id_reg1_raddr             ),
     .reg2_raddr_id                     (id_reg2_raddr             ),
     .reg1_raddr_ex                     (ex_reg1_raddr             ),

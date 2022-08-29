@@ -174,7 +174,6 @@ module axi_rw # (
 
     //wire [3 : 0] out_id_nxt = (Axi4_M.b_valid) ? Axi4_M.b_id : (Axi4_M.r_valid) ? Axi4_M.r_id : 0;
 
-
     always @(posedge clock) begin
         if (!reset_n) begin
             rw_ready_o <= 0;

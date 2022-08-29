@@ -88,7 +88,7 @@ always @( posedge clk ) begin
     if_pc <= next_pc;
     if_addr <= next_pc;
     //iru_jmp_cnt <= iru_jmp_cnt + 1;
-    fetched <= 0;
+    fetched <= 1;
   end
   else if ( axi_if_handshake_done && !(iru_excp || iru_intr || ex_jump_flag) && icache_hit  && (valid_if2id & ready_id2if) && !bubble_id_ex) begin//no jump, read common
     //if_inst <= if_data_read_i;
@@ -189,15 +189,27 @@ assign next_pc = (iru_excp | iru_intr) ? iru_pc : next_pc_r;
 //------------------------------------------------------------------------------
 //handshake
 logic valid_o_next_r;
-assign valid_if2id = valid_o_next_r && (axi_if_handshake_done || ex_jump_flag);//(fetched || ex_jump_flag); 
-pipehandshake u_if_id_handshake(
+assign valid_o_next_r = flush ? 0 : 1;
+assign valid_if2id = valid_o_next_r && (axi_if_handshake_done || ex_jump_flag );//(fetched || ex_jump_flag); 
+
+
+/*pipehandshake u_if_id_handshake(
     .clk          ( clk            ),
     .rst_n        ( rst_n          ),
     .valid_pre_i  ( flush ? 0 : 1  ),//for valid_if2id
-    .ready_next_i ( ready_id2if ),
+    .ready_next_i ( ready_id2if    ),
 
     .valid_o_next ( valid_o_next_r ),
     .ready_o_pre  (  )
-);
+);*/
+
+//assign ready_o_pre = ~valid_o_next || ready_next_i;//pre-fetch   A + ~AB = A+B
+/*
+always@(posedge clk or negedge rst_n)begin
+    if(!rst_n)
+        valid_o_next_r <= 0;
+    else if(ready_o_pre) //ready_next_i
+        valid_o_next_r <= valid_pre_i; 
+end*/
 
 endmodule

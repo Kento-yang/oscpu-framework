@@ -88,13 +88,13 @@ ex_mem u_ex_mem(
     .ex_alu_res                        (ex_alu_res                ),
     .ex_reg2_rdata                     (ex_regst                  ),
     .ex_lsu_opt                        (ex_lsu_opt                ),
-    .ex_lsu_lden(ex_lsu_lden),
-    .ex_lsu_sten(ex_lsu_sten),
+    .ex_lsu_lden                       (ex_lsu_lden               ),
+    .ex_lsu_sten                       (ex_lsu_sten               ),
     .ex_diff_pc                        (ex_diff_pc                ),
 
-    .ex_csr_wdata(ex_csr_wdata),
-    .ex_csr_waddr(ex_csr_waddr),
-    .ex_csr_wen(ex_csr_wen),
+    .ex_csr_wdata                      (ex_csr_wdata),
+    .ex_csr_waddr                      (ex_csr_waddr),
+    .ex_csr_wen                        (ex_csr_wen),
 
 
     .mem_inst                          (mem_inst                  ),
@@ -201,8 +201,8 @@ ex_mem u_ex_mem(
     wire addr_clint = (mem_alu_res >= `CLINT_BASE_ADDR) & (mem_alu_res < `CLINT_END_ADDR);
     wire addr_axi   = !(addr_clint && (mem_lsu_lden || mem_lsu_sten));//alu_res may in the field, need and the ld/st en.guarennte the res is addr.
 
-    assign clint_ren    = addr_clint & mem_lsu_lden;
-    assign clint_raddr  = mem_alu_res;
+    assign clint_ren      = addr_clint & mem_lsu_lden;
+    assign clint_raddr    = mem_alu_res;
 
     assign mem_clint_ldst = ~addr_axi;
 

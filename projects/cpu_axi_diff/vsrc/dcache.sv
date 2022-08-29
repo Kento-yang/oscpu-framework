@@ -69,7 +69,7 @@ module dcache #(
     wire [D_INDEX-1:0]  mem_addr_index   = mem_dc_addr_i[10:4];
     wire [D_OFFSET-1:0] mem_addr_offset  = mem_dc_addr_i[D_OFFSET-1:0];
 
-    logic [D_INDEX-1:0] mem_addr_index_r;
+    /*logic [D_INDEX-1:0] mem_addr_index_r;
     //while hit but
     wire  index_change = (mem_addr_index_r != mem_addr_index);
     always@(posedge clk or negedge rst_n)begin
@@ -78,23 +78,13 @@ module dcache #(
         end else begin
             mem_addr_index_r <= mem_addr_index;
         end
-    end
+    end*/
  
     logic hit_way0, hit_way1;
-    logic hit, hit_r;
+    logic hit;
     assign hit_way0 = ({1'b1, mem_addr_tag} == way0_tag[mem_addr_index][D_TAG-1 :0] ) ? 1 : 0 ; //dirty,{valid,tag}
     assign hit_way1 = ({1'b1, mem_addr_tag} == way1_tag[mem_addr_index][D_TAG-1 :0] ) ? 1 : 0 ; //dirty,{valid,tag}
     assign hit = hit_way0 | hit_way1;
-    always@(posedge clk or negedge rst_n)begin
-        if(!rst_n)begin
-            hit_r <= hit;
-        end else begin
-            hit_r <= hit;
-        end
-    end
-
-    logic hit_delay_o;
-    assign hit_delay_o = hit_r & hit;//align with sram rd
 
     //logic if_ic_ready_o;
     wire mem_dc_hs = mem_dc_valid_i & mem_dc_ready_o;
@@ -419,13 +409,13 @@ module dcache #(
                         way1_cen <= 0; way1_wen <= 1;
                     end
                 end
-                REPLACE:begin
+                REPLACE:begin //if dirty write back to dram.
                     if(rpl_en == 2'b11 && age == 0)begin//dirty,valid = 2'b11 replace way0.
                         way0_wdata_buf <= arb_dc_data_read_i;
                         arb_dc_valid_o <= 1;
                         arb_dc_data_write_o <= rpl_cacheline_buf0;
                         arb_dc_rw_req_o <= 1'b1;//write trans
-                        arb_dc_addr_o <= {way0_tag[mem_addr_index][D_TAG-1 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
+                        arb_dc_addr_o <= {way0_tag[mem_addr_index][D_TAG-2 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
                         way0_tag[mem_addr_index][D_TAG:D_TAG-1] <= 2'b01;
                     end
                     else if(rpl_en == 2'b11 && age == 1)begin
@@ -433,7 +423,7 @@ module dcache #(
                         arb_dc_valid_o <= 1;
                         arb_dc_data_write_o <= rpl_cacheline_buf1;
                         arb_dc_rw_req_o <= 1'b1;//write trans
-                        arb_dc_addr_o <= {way1_tag[mem_addr_index][D_TAG-1 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
+                        arb_dc_addr_o <= {way1_tag[mem_addr_index][D_TAG-2 :0], mem_addr_index, 4'b0};//tag,index,offset write back addr
                         way1_tag[mem_addr_index][D_TAG:D_TAG-1] <= 2'b01;
                     end
                     else if(rpl_en[1] == 0  && age == 0)begin//if undirty.throw out.
@@ -449,6 +439,7 @@ module dcache #(
                 end
                 REFILL:begin
                         arb_dc_valid_o <= 0;
+                        arb_dc_rw_req_o <= 1'b0;
                     if(!age)begin//LRU refill use age.
                         way0_tag[mem_addr_index][D_TAG:0] <= {1'b0, 1'b1, mem_addr_tag};//dirty,valid,tag
                         way0_wdata <= way0_wdata_buf;

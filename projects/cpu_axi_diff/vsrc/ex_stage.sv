@@ -106,7 +106,7 @@ id_ex u_id_ex(
     .pipe_wen                          (/*(ex_diff_pc == 'b1) ? pipe_ifid_wen:*/pipe_idex_wen),
     .bpu_bubble                        (bpu_bubble                ),
     .bypass_bubble                     (bubble_id_ex              ),
-    .cmt_wb_diff_pc(cmt_wb_diff_pc),
+    .cmt_wb_diff_pc                    (cmt_wb_diff_pc            ),
 
     .id_inst                           (id_inst                   ),
     .id_pc                             (id_pc                     ),
@@ -129,7 +129,7 @@ id_ex u_id_ex(
 
     .id_csr_rdata                      (id_csr_rdata              ),
     .id_csr_waddr                      (id_csr_waddr              ),
-    .id_csr_zimm                       (id_csr_zimm              ),
+    .id_csr_zimm                       (id_csr_zimm               ),
     .id_csr_wen                        (id_csr_wen                ),
 
     .tem_diff_pc                       (tem_diff_pc               ),

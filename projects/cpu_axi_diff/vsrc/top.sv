@@ -196,6 +196,7 @@ id_stage u_id_stage(
     .ex_inst(ex_inst),
     .pipe_idex_wen                     (pipe_idex_wen             ),
 
+    .mem_inst(mem_inst),
     .mem_reg_waddr                     (mem_reg_waddr             ),
     .mem_reg_wen                       (mem_reg_wen               ),
     .mem_lsu_opt                       (mem_lsu_opt               ),

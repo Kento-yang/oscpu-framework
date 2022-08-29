@@ -8,6 +8,7 @@
 module data_bypass(
     input      [`INST_WIDTH-1:0]          id_inst   ,
     input      [`INST_WIDTH-1:0]          ex_inst   ,
+    input      [`INST_WIDTH-1:0]          mem_inst   ,
 
     input   [`REG_ADDR_WIDTH-1:0]   reg1_raddr_id                ,
     input   [`REG_ADDR_WIDTH-1:0]   reg2_raddr_id                ,
@@ -36,12 +37,12 @@ module data_bypass(
 );
 	//若多位均为高电平，bypass优先级：wb/regfile < MEM/WB < ex/mem ，ex/mem是最近的指令，依赖也最新因此仲裁优先级最高。
 
-    assign bp_alu_src1_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) && (reg_waddr_ex == reg1_raddr_id) && (id_inst != ex_inst ));//inst不能相同，否则源/目标寄存器相同会形成环。
-    assign bp_alu_src1_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg1_raddr_id));
+    assign bp_alu_src1_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) && (reg_waddr_ex == reg1_raddr_id)  && (id_inst != ex_inst ));//inst不能相同，否则源/目标寄存器相同会形成环。
+    assign bp_alu_src1_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg1_raddr_id)&& (id_inst != mem_inst));//inst不能相同，否则源/目标寄存器相同会形成环 bypass回去结果错误。
     assign bp_alu_src1_ctrl[0] = (reg_wen_wb && (reg_waddr_wb != 5'd0) &&(reg_waddr_wb == reg1_raddr_id));
     
-    assign bp_alu_src2_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) &&(reg_waddr_ex == reg2_raddr_id));
-	assign bp_alu_src2_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg2_raddr_id));
+    assign bp_alu_src2_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) &&(reg_waddr_ex == reg2_raddr_id)   && (id_inst != ex_inst ));
+	assign bp_alu_src2_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg2_raddr_id)&& (id_inst != mem_inst));
     assign bp_alu_src2_ctrl[0] = (reg_wen_wb && (reg_waddr_wb != 5'd0) &&(reg_waddr_wb == reg2_raddr_id));
     
     //ld-add bubble
