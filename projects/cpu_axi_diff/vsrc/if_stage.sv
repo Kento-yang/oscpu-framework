@@ -80,32 +80,34 @@ always @( posedge clk ) begin
   if (!rst_n) begin
     if_pc <= `PC_START;
     if_addr <= `PC_START;
-    fetched <= 0;
+    //fetched <= 0;
     iru_jmp_cnt <= 2'b00;
   end
   else if (iru_excp || iru_intr || ex_jump_flag_r) /*&& icache_hit*/begin//have jump addr const.
     //if_inst <= if_data_read_r;
-    if_pc <= next_pc;
-    if_addr <= next_pc;
-    //iru_jmp_cnt <= iru_jmp_cnt + 1;
-    fetched <= 1;
+    if(iru_jmp_cnt == 2'b00)begin
+        if_pc <= next_pc;
+        if_addr <= next_pc;
+    end
+    iru_jmp_cnt <= iru_jmp_cnt + 1;
+    //fetched <= 1;
   end
   else if ( axi_if_handshake_done && !(iru_excp || iru_intr || ex_jump_flag) && icache_hit  && (valid_if2id & ready_id2if) && !bubble_id_ex) begin//no jump, read common
     //if_inst <= if_data_read_i;
     if_pc <= if_addr;
     if_addr <= if_addr + 4;
-    //iru_jmp_cnt <= 2'b00;
-    fetched <= 1;
+    iru_jmp_cnt <= 2'b00;
+    //fetched <= 1;
   end
   else if(ex_jump_flag && !ex_jump_flag_r)begin
     if_pc <= 0;
-    //iru_jmp_cnt <= 2'b00;
-    fetched <= 0;
+    iru_jmp_cnt <= 2'b00;
+    //fetched <= 0;
   end
   else if(!icache_hit)begin//miss,record now if_pc and fetch from axi.
     if_pc <= if_pc;
     if_addr <= if_addr;
-    fetched <= 0;
+    //fetched <= 0;
   end
   //else begin
     //if_inst <= if_data_read_r;
@@ -203,13 +205,5 @@ assign valid_if2id = valid_o_next_r && (axi_if_handshake_done || ex_jump_flag );
     .ready_o_pre  (  )
 );*/
 
-//assign ready_o_pre = ~valid_o_next || ready_next_i;//pre-fetch   A + ~AB = A+B
-/*
-always@(posedge clk or negedge rst_n)begin
-    if(!rst_n)
-        valid_o_next_r <= 0;
-    else if(ready_o_pre) //ready_next_i
-        valid_o_next_r <= valid_pre_i; 
-end*/
 
 endmodule
