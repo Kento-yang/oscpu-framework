@@ -227,6 +227,6 @@ Reg #(
   assign s_mstatus [62:0]= wen_mstatus ? wdata_mstatus[62:0]: mstatus[62:0];
   assign s_mcycle = wdata_mcycle;
   assign s_mie    = wen_mie     ? wdata_mie    : mie     ;
-  assign s_mip    = wen_mip     ? wb_csr_wdata : mip     ; //{wb_csr_wdata[`DATA_WIDTH-1:8],mip[7],wb_csr_wdata[6:0]} : mip ;
+  assign s_mip    = wen_mip     ? {wdata_mip[`DATA_WIDTH-1:8],mip[7],wdata_mip[6:0]} : mip ;
   assign s_mscratch = wen_mscratch ? wdata_mscratch : mscratch;
 endmodule

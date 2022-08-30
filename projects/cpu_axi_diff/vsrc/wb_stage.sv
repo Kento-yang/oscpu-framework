@@ -42,7 +42,7 @@ module wb_stage(
 //------------------------------------------------------------------------------
 //  EX-WB REG  
 //------------------------------------------------------------------------------
-    logic                              pipe_wen = valid_mem2wb && ready_wb2mem;
+    wire                              pipe_wen = valid_mem2wb && ready_wb2mem;
     //logic  [`DATA_WIDTH-1:0]           mem_regld    ;
 
     

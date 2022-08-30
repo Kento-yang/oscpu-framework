@@ -59,7 +59,15 @@ module top (
 
     logic axi_trans_done,flush;
     assign axi_trans_done = ( mem_ready | !mem_valid) & (if_ready | !if_valid) ;
-    assign flush     = (iru_excp | iru_intr) & (wbu_valid_o_next & wbu_ready);       // iru_intr not commit.
+    assign flush     = (iru_excp | iru_intr) & (valid_wb2iru & ready_iru2wb);       // iru_intr not commit.
+
+    logic axi_trans_done_r;
+    always@(posedge clk or negedge rst_n)begin
+        if(!rst_n)
+            axi_trans_done_r <= 0;
+        else
+            axi_trans_done_r <= axi_trans_done;
+    end
 //------------------------------------------------------------------------------
 //  1.IF STAGE
 //------------------------------------------------------------------------------
@@ -411,10 +419,10 @@ mem_stage u_mem_stage(
 //------------------------------------------------------------------------------
 //  5.WB STAGE
 //------------------------------------------------------------------------------
-    logic wbu_valid_o_next;
-    logic wbu_ready;
+    logic valid_wb2iru;
+    logic ready_iru2wb;
     logic wb_clint_ldst;
-    assign wbu_ready = (iru_excp | iru_intr) ? (mem_lsu_lden | mem_lsu_sten) ? ( mem_ready | !mem_valid): axi_trans_done : 1;
+    assign ready_iru2wb = (iru_excp | iru_intr) ? (mem_lsu_lden | mem_lsu_sten) ? ( mem_ready | !mem_valid) : axi_trans_done : 1;
 
 wb_stage u_wb_stage(
     .clk                               (clk                       ),
@@ -449,8 +457,8 @@ wb_stage u_wb_stage(
     .wb_csr_wen                        (wb_csr_wen                ),
 
     .valid_mem2wb                      (valid_mem2wb              ),
-    .ready_next_i                      (wbu_ready                 ),
-    .valid_o_next                      (wbu_valid_o_next          ),
+    .ready_next_i                      (ready_iru2wb              ),
+    .valid_o_next                      (valid_wb2iru              ),
     .ready_wb2mem                      (ready_wb2mem              ) 
 );
 
@@ -476,8 +484,8 @@ wb_stage u_wb_stage(
   logic [`DATA_WIDTH-1:0]                iru_pc     ;
   logic                     mret;
 iru u_iru(
-    .wb_valid                          (wbu_valid_o_next          ),
-    .wb_ready                          (wbu_ready                 ),
+    .wb_valid                          (valid_wb2iru              ),
+    .wb_ready                          (ready_iru2wb              ),
     //.wbu_nop          ( wbu_nop          ),
     .wb_inst                           (wb_inst                   ),
     .wb_pc                             (wb_diff_pc                ),
@@ -565,7 +573,7 @@ csr_regs u_csr_regs(
     .s_mcycle                          (s_mcycle                  ),
     .s_mie                             (s_mie                     ),
     .s_mip                             (s_mip                     ),
-    .s_mscratch                        (s_mscratch                     ),
+    .s_mscratch                        (s_mscratch                ),
     .global_int_en                     (                          ) 
 );
 
@@ -585,8 +593,8 @@ csr_regs u_csr_regs(
     reg     [  63:0]         instrCnt                   ;
     reg     [`REG_BUS]       regs_diff_npc [0:31]       ;
     reg     [`DATA_WIDTH-1:0]cmt_intrNO                 ;
-    wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && wbu_valid_o_next && wbu_ready
-                                        && (wb_diff_pc != cmt_wb_diff_pc)&& !iru_intr;//一条指令不能提交两遍
+    wire                     real_cmt = (wb_diff_pc != `PC_WIDTH'b0) && (wb_diff_pc != `PC_WIDTH'b1) && (wb_inst != `INST_WIDTH'b0) && valid_wb2iru && ready_iru2wb
+                                        && (wb_diff_pc != cmt_wb_diff_pc) && !iru_intr;//一条指令不能提交两遍
 
   assign s_uart_out_valid = real_cmt & (cmt_inst == `DATA_WIDTH'h7b);
   assign s_uart_out_char = regs[10][7:0];
@@ -612,8 +620,6 @@ always @(posedge clk) begin
   end
 end
 
-
-
 always @(negedge clk) begin
   if (!rst_n) begin
     {cmt_wen, cmt_wdest, cmt_wdata, cmt_pc, cmt_inst, cmt_valid, cmt_intrNO, trap, trap_code, cycleCnt, instrCnt} <= 0;
@@ -625,7 +631,7 @@ always @(negedge clk) begin
     cmt_pc <= wb_diff_pc;                                           //pc;
     cmt_inst <= wb_inst;                                            //inst;
     cmt_valid <= real_cmt;                                          //real_cmt;
-    cmt_intrNO <=(iru_intr & wbu_ready) ? s_mcause : 0;             // 中断号，非0时产生中断。产生中断的时钟周期中，DifftestInstrCommit提交的valid需为0
+    cmt_intrNO <=(iru_intr & ready_iru2wb) ? s_mcause : 0;             // 中断号，非0时产生中断。产生中断的时钟周期中，DifftestInstrCommit提交的valid需为0
     regs_diff_npc <= regs         ;
 
     trap <= wb_inst[6:0] == 7'h6b;
