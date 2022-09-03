@@ -8,6 +8,7 @@ module iru (
   //input   logic                    wbu_nop     ,
   input   logic [`INST_WIDTH-1:0]  wb_inst     ,
   input   logic [`DATA_WIDTH-1:0]  wb_pc      ,
+  input   logic                    wb_csr_wen , 
 // from clint timer interupt
   input  logic                                i_clint_mtip,
   // for bru:
@@ -33,10 +34,10 @@ module iru (
 
   wire ecall = (wb_inst == `INST_WIDTH'h00000073);
   assign mret  = (wb_inst == `INST_WIDTH'h30200073);
-  wire wbu_nop =  (wb_inst == `INST_WIDTH'h13);
+  wire wbu_nop =  (wb_inst == `INST_WIDTH'h13) || (wb_inst == `INST_WIDTH'h0);//
   // wb_valid & (!wbu_nop) is used for waitting next correct pc!
 
-  wire timer = wb_valid  & (!wbu_nop) & mstatus[3] & i_clint_mtip & mie[7]; // timer irq pending. i_clint_mtip can not be mip[7],make difftest pass
+  wire timer = wb_valid  & (!wbu_nop) & mstatus[3] & i_clint_mtip & mie[7] & !wb_csr_wen; // timer irq pending. i_clint_mtip can not be mip[7],make difftest pass
 
   assign o_iru_excp = ecall | mret;  // exception.
   assign o_iru_intr = timer;         // interrupt.

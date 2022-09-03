@@ -489,6 +489,7 @@ iru u_iru(
     //.wbu_nop          ( wbu_nop          ),
     .wb_inst                           (wb_inst                   ),
     .wb_pc                             (wb_diff_pc                ),
+    .wb_csr_wen(wb_csr_wen),
     .i_clint_mtip                      (clint_mtip                ),
 
     .o_iru_excp                        (iru_excp                  ),

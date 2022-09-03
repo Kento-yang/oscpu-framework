@@ -378,7 +378,7 @@ module dcache #(
                                 4'b1000: way1_wdata <= {rpl_cacheline_buf1[127:72],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[63:0]};
                                 4'b1001: way1_wdata <= {rpl_cacheline_buf1[127:80],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[71:0]};
                                 4'b1010: way1_wdata <= {rpl_cacheline_buf1[127:88],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[79:0]};
-                                4'b1011: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[7:0]),  rpl_cacheline_buf1[87:0]};
+                                4'b1011: way1_wdata <= {rpl_cacheline_buf1[127:96],  (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[87:0]};
                                 4'b1100: way1_wdata <= {rpl_cacheline_buf1[127:104], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[95:0]};
                                 4'b1101: way1_wdata <= {rpl_cacheline_buf1[127:112], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[103:0]};
                                 4'b1110: way1_wdata <= {rpl_cacheline_buf1[127:120], (mem_dc_data_write_i[7:0]), rpl_cacheline_buf1[111:0]};
