@@ -7,7 +7,7 @@ if [ $1 = "-b" ]; then
     bash build.sh -e cpu_axi_diff -b -r "-i non-output/cpu-tests" -m "EMU_TRACE=1 WITH_DRAMSIM3=1"                      #cpu-tests / riscv-tests
     #./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/rt-thread/rtthread.bin --dump-wave -b 580000" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b  #rtthread
 elif [ $1 = "rtthread" ]; then
-    ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/rt-thread/rtthread.bin --dump-wave -b 2000000" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b  #rtthread
+    ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/rt-thread/rtthread.bin --dump-wave -b 0" -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b  #rtthread
 elif [ $1 = "interrupt" ]; then
     ./build.sh -e cpu_axi_diff -d -s -a "-i custom-output/interrupt-test/amtest-interrupt-test.bin " -m "EMU_TRACE=1 WITH_DRAMSIM3=1" -b -b  #--dump-wave -b 2260000
 elif [ $1 = "yield" ]; then

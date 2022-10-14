@@ -31,6 +31,62 @@ module dcache #(
     input              [   1:0]             arb_dc_resp_i                   ,
     output             [   7:0]             arb_dc_wmask_o                  
 );
+    wire [D_TAG-2:0]    mem_addr_tag     = mem_dc_addr_i[63:11];
+    wire [D_INDEX-1:0]  mem_addr_index   = mem_dc_addr_i[10:4];
+    wire [D_OFFSET-1:0] mem_addr_offset  = mem_dc_addr_i[D_OFFSET-1:0];
+
+    assign arb_dc_valid_o = mem_dc_valid_i;
+    assign mem_dc_ready_o = arb_dc_ready_i;
+    assign arb_dc_rw_req_o = mem_dc_rw_req_i;
+    assign arb_dc_addr_o = {mem_dc_addr_i[63:4], 4'b0};
+    assign arb_dc_size_o = mem_dc_size_i;
+    assign mem_dc_resp_o = arb_dc_resp_i;
+    assign arb_dc_wmask_o = mem_dc_wmask_i;
+    //read data.
+    assign mem_dc_data_read_o = (mem_dc_rw_req_i == 0) ? (arb_dc_data_read_i >> {mem_addr_offset,3'b0}) : 'b0;
+
+    //write data.
+    /*always_comb begin
+        case(mem_addr_offset[D_OFFSET-1:0])
+            4'b0000: arb_dc_data_write_o[63:0]     = mem_dc_data_write_i[63:0];
+            4'b0001: arb_dc_data_write_o[71:8]     = mem_dc_data_write_i[63:0];
+            4'b0010: arb_dc_data_write_o[79:16]    = mem_dc_data_write_i[63:0];
+            4'b0011: arb_dc_data_write_o[87:24]    = mem_dc_data_write_i[63:0];
+            4'b0100: arb_dc_data_write_o[95:32]    = mem_dc_data_write_i[63:0];
+            4'b0101: arb_dc_data_write_o[103:40]   = mem_dc_data_write_i[63:0];
+            4'b0110: arb_dc_data_write_o[111:48]   = mem_dc_data_write_i[63:0];
+            4'b0111: arb_dc_data_write_o[119:56]   = mem_dc_data_write_i[63:0];
+            4'b1000: arb_dc_data_write_o[127:64]   = mem_dc_data_write_i[63:0];
+            4'b1001: arb_dc_data_write_o[127:72]   = mem_dc_data_write_i[55:0];
+            4'b1010: arb_dc_data_write_o[127:80]   = mem_dc_data_write_i[47:0];
+            4'b1011: arb_dc_data_write_o[127:88]   = mem_dc_data_write_i[39:0];
+            4'b1100: arb_dc_data_write_o[127:96]   = mem_dc_data_write_i[31:0];
+            4'b1101: arb_dc_data_write_o[127:104]  = mem_dc_data_write_i[23:0];
+            4'b1110: arb_dc_data_write_o[127:112]  = mem_dc_data_write_i[15:0];
+            4'b1111: arb_dc_data_write_o[127:120]  = mem_dc_data_write_i[7:0] ;
+        endcase
+    end*/
+
+    
+    always_comb begin
+        arb_dc_data_write_o[127:0] = 128'b0;
+        if(mem_dc_wmask_i == 8'b1111_1111 && mem_dc_rw_req_i == 1 )begin
+            arb_dc_data_write_o[{mem_addr_offset,3'b0}  +: 64] = mem_dc_data_write_i[63:0] ; //从{mem_addr_offset,3'b0}升序，位宽64
+        end
+        else if(mem_dc_wmask_i == 8'b0000_1111 && mem_dc_rw_req_i == 1)begin
+            arb_dc_data_write_o[{mem_addr_offset,3'b0}  +: 32] = mem_dc_data_write_i[31:0]; 
+        end                       
+        else if(mem_dc_wmask_i == 8'b0000_0011 && mem_dc_rw_req_i == 1)begin
+            arb_dc_data_write_o[{mem_addr_offset,3'b0}  +: 16] = mem_dc_data_write_i[15:0]; 
+        end
+        else if(mem_dc_wmask_i == 8'b0000_0001 && mem_dc_rw_req_i == 1)begin
+            arb_dc_data_write_o[{mem_addr_offset,3'b0}  +: 8]  = mem_dc_data_write_i[7:0] ; 
+        end
+        else
+            arb_dc_data_write_o = 'b0;
+    end
+
+    /*
     logic [CACHE_LINE_WIDTH-1:0] rpl_cacheline_buf0, rpl_cacheline_buf1;
     assign rpl_cacheline_buf0 = way0_rdata;
     assign rpl_cacheline_buf1 = way1_rdata;
@@ -41,16 +97,7 @@ module dcache #(
     assign arb_dc_size_o = mem_dc_size_i;//mem --> axi    
     assign mem_dc_resp_o = arb_dc_resp_i;//axi -->mem    
     assign arb_dc_wmask_o = mem_dc_wmask_i;
-    /*logic [63:0] way_wmask;
-  always_comb begin
-    case (mem_dc_wmask_i)
-        8'b0000_0001: way_wmask = 64'h0000_0000_0000_00FF;
-        8'b0000_0011: way_wmask = 64'h0000_0000_0000_FFFF;
-        8'b0000_1111: way_wmask = 64'h0000_0000_FFFF_FFFF;
-        8'b1111_1111: way_wmask = 64'hFFFF_FFFF_FFFF_FFFF;
-      default:  way_wmask = 64'b0;
-    endcase
-  end*/
+
     localparam RAM_WIDTH = 128, RAM_DEPTH = 64;
 
     localparam IDLE    = 3'b000,
@@ -65,21 +112,8 @@ module dcache #(
     reg [D_TAG:0] way0_tag [0:127];//{dirty,valid, tag} 1+1+53=55bit
     reg [D_TAG:0] way1_tag [0:127];//{dirty,valid, tag} 1+1+53=55bit
     
-    wire [D_TAG-2:0]    mem_addr_tag     = mem_dc_addr_i[63:11];
-    wire [D_INDEX-1:0]  mem_addr_index   = mem_dc_addr_i[10:4];
-    wire [D_OFFSET-1:0] mem_addr_offset  = mem_dc_addr_i[D_OFFSET-1:0];
+   
 
-    /*logic [D_INDEX-1:0] mem_addr_index_r;
-    //while hit but
-    wire  index_change = (mem_addr_index_r != mem_addr_index);
-    always@(posedge clk or negedge rst_n)begin
-        if(!rst_n)begin
-            mem_addr_index_r <= 0;
-        end else begin
-            mem_addr_index_r <= mem_addr_index;
-        end
-    end*/
- 
     logic hit_way0, hit_way1;
     logic hit;
     assign hit_way0 = ({1'b1, mem_addr_tag} == way0_tag[mem_addr_index][D_TAG-1 :0] ) ? 1 : 0 ; //dirty,{valid,tag}
@@ -93,19 +127,19 @@ module dcache #(
 //------------------------------------------------------------------------------
 //  STATE MACHINE           
 //------------------------------------------------------------------------------
- /*注意：只有在cache line替换时，dirty=1才需要写入下级存储!!(可以存储到dirty的cache line中)
- 0.初始，mem请求（传递valid addr req size resp） req为写需要传递wdata，wmask
- 1.查询，若hit（根据index寻址，且对应的valid为高）且valid=1则
-        (1)读出对应cache line 128bit ,
-        (2)根据req类型：LD则直接跳转至拉高ready态，;
-                       为ST则根据offset替换对应bit，准备好数据并跳转写回
-    缺失则跳转.
- 2.写回，将并换掉了对应offset bit的cache line, 重新写入cache中，并置高dirty bit.跳回写回态.
- 3.拉高ready .此状态专门用于拉高ready 与从sram读出数据是同步的。LD则直接输出对应offset数据.ST则直接输出ready表示完成存储.
- 4.缺失，进行总线访问（arb_valid置高），等待返回对应cache line数据（arb-dc 握手成功跳转），此时读出要写入的way的数据，替换数据（如果有的话）
- 5.替换，若原index对应cache line V=D=1，则需要写回（arb_valid再次置高，进行总线存储）。否则直接丢弃。
- 6.填充，若需要写回，则等待写回完成，进行新cache line填充.不需要写回则直接填充。填充完毕之后hit会置高，回到初始状态。   
-*/
+//注意：只有在cache line替换时，dirty=1才需要写入下级存储!!(可以存储到dirty的cache line中)
+//0.初始，mem请求（传递valid addr req size resp） req为写需要传递wdata，wmask
+//1.查询，若hit（根据index寻址，且对应的valid为高）且valid=1则
+//       (1)读出对应cache line 128bit ,
+//       (2)根据req类型：LD则直接跳转至拉高ready态，;
+//                      为ST则根据offset替换对应bit，准备好数据并跳转写回
+//   缺失则跳转.
+//2.写回，将并换掉了对应offset bit的cache line, 重新写入cache中，并置高dirty bit.跳回写回态.
+//3.拉高ready .此状态专门用于拉高ready 与从sram读出数据是同步的。LD则直接输出对应offset数据.ST则直接输出ready表示完成存储.
+//4.缺失，进行总线访问（arb_valid置高），等待返回对应cache line数据（arb-dc 握手成功跳转），此时读出要写入的way的数据，替换数据（如果有的话）
+//5.替换，若原index对应cache line V=D=1，则需要写回（arb_valid再次置高，进行总线存储）。否则直接丢弃。
+//6.填充，若需要写回，则等待写回完成，进行新cache line填充.不需要写回则直接填充。填充完毕之后hit会置高，回到初始状态。   
+
 //1.状态跳变
     always@(posedge clk or negedge rst_n)begin
         if(!rst_n)
@@ -439,7 +473,7 @@ module dcache #(
                 end
                 REFILL:begin
                         arb_dc_valid_o <= 0;
-                        arb_dc_rw_req_o <= 1'b0;
+                        //arb_dc_rw_req_o <= 1'b0;
                     if(!age)begin//LRU refill use age.
                         way0_tag[mem_addr_index][D_TAG:0] <= {1'b0, 1'b1, mem_addr_tag};//dirty,valid,tag
                         way0_wdata <= way0_wdata_buf;
@@ -512,31 +546,6 @@ module dcache #(
     end
 
     //wrdate to cache.
-    /*always_comb begin
-        way0_wdata = 128'b0;
-        way1_wdata = 128'b0;
-        if(hit_way0)
-            case(mem_addr_offset[D_OFFSET-1:D_OFFSET-2])
-                2'b00: way0_wdata[63: 0]  = mem_dc_data_write_i[63:0];
-                2'b01: way0_wdata[95:32]  = mem_dc_data_write_i[63:0];
-                2'b10: way0_wdata[127:64] = mem_dc_data_write_i[63:0];
-                2'b11: way0_wdata[127:96] = mem_dc_data_write_i[31:0];
-                default: ;
-            endcase
-        else if(hit_way1)
-            case(mem_addr_offset[D_OFFSET-1:D_OFFSET-2])
-                2'b00: way1_wdata[63: 0]  = mem_dc_data_write_i[63:0];
-                2'b01: way1_wdata[95:32]  = mem_dc_data_write_i[63:0];
-                2'b10: way1_wdata[127:64] = mem_dc_data_write_i[63:0];
-                2'b11: way1_wdata[127:96] = mem_dc_data_write_i[31:0];
-                default:;
-            endcase
-        else begin
-            way0_wdata = 128'b0;
-            way1_wdata = 128'b0;
-        end
-    end*/
-
 //LRU replace
     logic age;//age=1 replace way 0,age=0 replace 1
     always@(posedge clk or negedge rst_n)begin
@@ -555,7 +564,7 @@ module dcache #(
     logic [CACHE_LINE_WIDTH-1:0]     way0_wdata, way1_wdata, way0_wdata_buf, way1_wdata_buf;
 
 cache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .A(mem_addr_index), .D(way0_wdata) );
-cache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(mem_addr_index), .D(way1_wdata) );
+cache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .A(mem_addr_index), .D(way1_wdata) );*/
 
 endmodule
 
