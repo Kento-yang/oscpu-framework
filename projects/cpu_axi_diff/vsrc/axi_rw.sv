@@ -66,7 +66,7 @@ module axi_rw # (
     input  [RW_ADDR_WIDTH-1:0]            rw_addr_i,
     input  [1:0]                        rw_size_i,
     output logic [1:0]                  rw_resp_o,
-    input  [7:0]                        rw_wmask_i,
+    input  [ RW_DATA_WIDTH/8-1 :0]                        rw_wmask_i,
 
     // Advanced eXtensible Interface
     axi4_if.Master                      Axi4_M
