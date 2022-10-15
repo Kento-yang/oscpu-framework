@@ -468,45 +468,10 @@ module dcache #(
     //read data.
     always_comb begin
         if(hit_way0)
-            case(mem_addr_offset[D_OFFSET-1:0])
-                4'b0000: mem_dc_data_read_o = way0_rdata[63:0];
-                4'b0001: mem_dc_data_read_o = way0_rdata[71:8];
-                4'b0010: mem_dc_data_read_o = way0_rdata[79:16];
-                4'b0011: mem_dc_data_read_o = way0_rdata[87:24];
-                4'b0100: mem_dc_data_read_o = way0_rdata[95:32];
-                4'b0101: mem_dc_data_read_o = way0_rdata[103:40];
-                4'b0110: mem_dc_data_read_o = way0_rdata[111:48];
-                4'b0111: mem_dc_data_read_o = way0_rdata[119:56];
-                4'b1000: mem_dc_data_read_o = way0_rdata[127:64];
-                4'b1001: mem_dc_data_read_o = {8'b0,  way0_rdata[127:72]};
-                4'b1010: mem_dc_data_read_o = {16'b0, way0_rdata[127:80]};
-                4'b1011: mem_dc_data_read_o = {24'b0, way0_rdata[127:88]};
-                4'b1100: mem_dc_data_read_o = {32'b0, way0_rdata[127:96]};
-                4'b1101: mem_dc_data_read_o = {40'b0, way0_rdata[127:104]};
-                4'b1110: mem_dc_data_read_o = {48'b0, way0_rdata[127:112]};
-                4'b1111: mem_dc_data_read_o = {56'b0, way0_rdata[127:120]};
-                default:;
-            endcase
+            mem_dc_data_read_o = way0_rdata >> {mem_addr_offset, 3'b0};
+
         else if(hit_way1)
-            case(mem_addr_offset[D_OFFSET-1:0])
-                4'b0000: mem_dc_data_read_o = way1_rdata[63:0];
-                4'b0001: mem_dc_data_read_o = way1_rdata[71:8];
-                4'b0010: mem_dc_data_read_o = way1_rdata[79:16];
-                4'b0011: mem_dc_data_read_o = way1_rdata[87:24];
-                4'b0100: mem_dc_data_read_o = way1_rdata[95:32];
-                4'b0101: mem_dc_data_read_o = way1_rdata[103:40];
-                4'b0110: mem_dc_data_read_o = way1_rdata[111:48];
-                4'b0111: mem_dc_data_read_o = way1_rdata[119:56];
-                4'b1000: mem_dc_data_read_o = way1_rdata[127:64];
-                4'b1001: mem_dc_data_read_o = {8'b0,  way1_rdata[127:72]};
-                4'b1010: mem_dc_data_read_o = {16'b0, way1_rdata[127:80]};
-                4'b1011: mem_dc_data_read_o = {24'b0, way1_rdata[127:88]};
-                4'b1100: mem_dc_data_read_o = {32'b0, way1_rdata[127:96]};
-                4'b1101: mem_dc_data_read_o = {40'b0, way1_rdata[127:104]};
-                4'b1110: mem_dc_data_read_o = {48'b0, way1_rdata[127:112]};
-                4'b1111: mem_dc_data_read_o = {56'b0, way1_rdata[127:120]};
-                default:;
-            endcase
+            mem_dc_data_read_o = way1_rdata >> {mem_addr_offset, 3'b0};
         else
             mem_dc_data_read_o = 64'b0;
     end
