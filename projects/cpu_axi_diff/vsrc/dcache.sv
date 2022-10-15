@@ -337,8 +337,6 @@ module dcache #(
         assign BWEN[8*i+7 : 8*i] = {8{~cacheline_wmask[i]}};
     end
     
-         
-
 dcache_ram u_way0(.Q( way0_rdata), .CLK (clk), .CEN (way0_cen), .WEN (way0_wen ), .BWEN(BWEN), .A(mem_addr_index), .D(way0_wdata) );
 dcache_ram u_way1(.Q( way1_rdata), .CLK (clk), .CEN (way1_cen), .WEN (way1_wen ), .BWEN(BWEN), .A(mem_addr_index), .D(way1_wdata) );
 
