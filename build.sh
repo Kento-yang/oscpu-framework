@@ -111,8 +111,18 @@ build_diff_proj() {
 
     # Refresh the modification time of the top file, otherwise some changes to the RTL source code will not take effect in next compilation.
     touch -m `find $PROJECT_PATH/$VSRC_FOLDER -name $DIFFTEST_TOP_FILE` 1>/dev/null 2>&1
-    # create soft link ($BUILD_PATH/*.v -> $PROJECT_PATH/$VSRC_FOLDER/*.v)
-    create_soft_link $BUILD_PATH $PROJECT_PATH/$VSRC_FOLDER \"*.v\"
+    # create soft link ($BUILD_PATH/*.v, *.sv -> $PROJECT_PATH/$VSRC_FOLDER/*.v, *.sv)
+    mkdir -p $BUILD_PATH
+    find -L $BUILD_PATH -maxdepth 1 -type l -delete
+    for FILE in $(find $PROJECT_PATH/$VSRC_FOLDER -type f \( -name "*.v" -o -name "*.sv" \)); do
+        ln -sf "$FILE" "$BUILD_PATH/${FILE##*/}" 1>/dev/null 2>&1
+    done
+    # difftest framework requires the top file to be named SimTop.v
+    if [[ -f $BUILD_PATH/SimTop.sv ]] && [[ ! -e $BUILD_PATH/SimTop.v ]]; then
+        ln -s SimTop.sv $BUILD_PATH/SimTop.v
+    fi
+    # make the top file newer than difftest's scala sources so make will not try to regenerate it
+    touch -m $BUILD_PATH/SimTop.v 1>/dev/null 2>&1
 
     compile_difftest
 }

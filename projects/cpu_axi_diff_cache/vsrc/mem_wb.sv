@@ -1,0 +1,84 @@
+`include "rvseed_defines.sv"
+//`include "vsrc/StdLib/Reg.sv"
+
+module mem_wb (
+  input                                     clk       ,
+  input                                     rst_n     ,
+  input logic                         flush,
+  input                                     pipe_wen ,
+  input logic [`PC_WIDTH-1:0] cmt_wb_diff_pc,
+
+  input            [`INST_WIDTH-1:0]           mem_inst   ,
+  input                                     mem_reg_wen,
+  input         [`REG_ADDR_WIDTH-1 : 0]     mem_reg_waddr,  // register write address
+  input         [`DATA_WIDTH-1:0]           mem_regld    ,
+  input         [`DATA_WIDTH-1:0]           mem_alu_res    ,
+  input         [`LSU_OPT_WIDTH-1:0]        mem_lsu_opt ,
+  input             [`PC_WIDTH-1:0]             mem_diff_pc,
+  input mem_clint_ldst,
+
+//CSR
+    input logic   [`DATA_WIDTH - 1:0]        mem_csr_wdata,
+    input logic   [`CSR_ADDR_WIDTH-1:0]      mem_csr_waddr,
+    input logic                              mem_csr_wen,
+
+  output logic            [`INST_WIDTH-1:0]           wb_inst   ,
+  output logic                              wb_reg_wen,   
+  output logic  [`REG_ADDR_WIDTH-1 : 0]     wb_reg_waddr,  // register write address
+
+  output logic  [`DATA_WIDTH-1:0]           wb_regld   ,
+  output logic  [`DATA_WIDTH-1:0]           wb_alu_res ,
+  output logic  [`LSU_OPT_WIDTH-1:0]        wb_lsu_opt ,
+  output logic             [`PC_WIDTH-1:0]             wb_diff_pc,
+  output logic wb_clint_ldst,
+
+    output logic   [`DATA_WIDTH - 1:0]        wb_csr_wdata,
+    output logic   [`CSR_ADDR_WIDTH-1:0]      wb_csr_waddr,
+    output logic                              wb_csr_wen
+ 
+);
+  logic [`INST_WIDTH-1:0]           tem_inst   ;
+  logic                              tem_reg_wen;   
+  logic  [`REG_ADDR_WIDTH-1 : 0]     tem_reg_waddr;  // register write address
+
+  logic  [`DATA_WIDTH-1:0]           tem_regld   ;
+  logic  [`DATA_WIDTH-1:0]           tem_alu_res ;
+  logic  [`LSU_OPT_WIDTH-1:0]        tem_lsu_opt ;
+  logic  [`PC_WIDTH-1:0]             tem_diff_pc;
+
+
+  logic   [`DATA_WIDTH - 1:0]        tem_csr_wdata;
+  logic   [`CSR_ADDR_WIDTH-1:0]      tem_csr_waddr;
+  logic                              tem_csr_wen;
+  
+  assign tem_inst = mem_inst;
+  assign tem_reg_wen = mem_reg_wen;//inst相同只写回一次，避免一条指令执行多遍形成回环。。
+  assign tem_reg_waddr = mem_reg_waddr;
+  assign tem_regld = mem_regld;
+  assign tem_alu_res = mem_alu_res;
+  assign tem_lsu_opt = mem_lsu_opt;
+  assign  tem_diff_pc = mem_diff_pc;          
+  assign tem_csr_wdata = mem_csr_wdata;
+  assign tem_csr_waddr = mem_csr_waddr;
+  assign tem_csr_wen = mem_csr_wen;
+
+   logic cmt_flush;
+  assign cmt_flush = (cmt_wb_diff_pc == tem_diff_pc) ? 1 : 0;
+
+  Reg #(
+    .WIDTH      (`INST_WIDTH + 1 + `REG_ADDR_WIDTH + 3*`DATA_WIDTH + `LSU_OPT_WIDTH + `PC_WIDTH  +  `CSR_ADDR_WIDTH +1+1),
+    .RESET_VAL  (0                    )
+  ) if_id_reg(
+  	.clk      (clk                ),
+    .rst_n    (rst_n              ),
+    .wen      (flush | pipe_wen                ),
+    .din      ((flush | cmt_flush) ? 0 : {tem_inst, tem_reg_wen,  tem_reg_waddr, tem_regld, tem_alu_res, tem_lsu_opt,tem_diff_pc,
+                mem_clint_ldst,tem_csr_wdata, tem_csr_waddr, tem_csr_wen}),
+    .dout     ({wb_inst, wb_reg_wen,  wb_reg_waddr, wb_regld, wb_alu_res, wb_lsu_opt,wb_diff_pc,
+                wb_clint_ldst,wb_csr_wdata, wb_csr_waddr, wb_csr_wen})
+  );
+
+
+
+  
+endmodule

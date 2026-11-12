@@ -1,0 +1,66 @@
+//a.在一个周期开始，EX 阶段要使用上一条处在 EX 阶段指令的执行结果，此时我们将 EX/MEM 寄存器的数据前递。
+//b.在一个周期开始，EX 阶段要使用上一条处在 MEM 阶段指令的执行结果，此时我们将 reg_waddr_exMEM/WB 寄存器的数据前递。
+//c.在一个周期开始，EX 阶段要使用上一条处在 WB 阶段指令的执行结果，此时不需要前递（寄存器堆前递机制）
+//d.在第一种情况下，如果是上一条是访存指令，即发生加载—使用型冒险。则需要停顿一个周期。
+//e.在发生加载——使用型冒险的时候，如果是load后跟着store指令，并且load指令的rd与store指令的rs1不同而与rs2相同，
+//则不需要停顿，只需要将MEM/WB 寄存器的数据前递到MEM阶段。
+`include "rvseed_defines.sv"
+module data_bypass(
+    input      [`INST_WIDTH-1:0]          id_inst   ,
+    input      [`INST_WIDTH-1:0]          ex_inst   ,
+
+    input   [`REG_ADDR_WIDTH-1:0]   reg1_raddr_id                ,
+    input   [`REG_ADDR_WIDTH-1:0]   reg2_raddr_id                ,
+    input   [`REG_ADDR_WIDTH-1:0]   reg1_raddr_ex                ,
+    input   [`REG_ADDR_WIDTH-1:0]   reg2_raddr_ex                ,	
+
+    input   [`REG_ADDR_WIDTH-1:0]   reg_waddr_ex                ,
+    input   [`REG_ADDR_WIDTH-1:0]   reg_waddr_mem                ,
+    input   [`REG_ADDR_WIDTH-1:0]   reg_waddr_wb            , 
+
+    input                           reg_wen_ex              ,
+    input                           reg_wen_mem              ,
+    input                           reg_wen_wb              ,
+
+    input                           sten_id             ,
+    input                           sten_ex           ,//ex阶段st指令
+    input                           sten_mem           ,//mem阶段st指令
+    input                           lden_id,
+    input                           lden_ex,
+    input                           lden_mem           ,//mem阶段ld指令
+    
+    output  logic                   bubble_id_ex ,
+    output  logic   [   2:0]        bp_alu_src1_ctrl           ,//1X:EX/MEM bypass, 01:MEM/WB bypass, 00:needn't bypass
+    output  logic   [   2:0]        bp_alu_src2_ctrl           ,
+    output  logic                   bp_ld_st_ctrl               
+);
+	//若多位均为高电平，bypass优先级：wb/regfile < MEM/WB < ex/mem ，ex/mem是最近的指令，依赖也最新因此仲裁优先级最高。
+
+    assign bp_alu_src1_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) && (reg_waddr_ex == reg1_raddr_id) && (id_inst != ex_inst ));//inst不能相同，否则源/目标寄存器相同会形成环。
+    assign bp_alu_src1_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg1_raddr_id));
+    assign bp_alu_src1_ctrl[0] = (reg_wen_wb && (reg_waddr_wb != 5'd0) &&(reg_waddr_wb == reg1_raddr_id));
+    
+    assign bp_alu_src2_ctrl[2] = (reg_wen_ex && (reg_waddr_ex != 5'd0) &&(reg_waddr_ex == reg2_raddr_id));
+	assign bp_alu_src2_ctrl[1] = (reg_wen_mem && (reg_waddr_mem != 5'd0) &&(reg_waddr_mem == reg2_raddr_id));
+    assign bp_alu_src2_ctrl[0] = (reg_wen_wb && (reg_waddr_wb != 5'd0) &&(reg_waddr_wb == reg2_raddr_id));
+    
+    //ld-add bubble
+    //mem阶段ld，且写回数据与下一条指令的源寄存器冲突
+    //在总线中，这块会有问题，Lbu a0，a0由于总线执行一次指令较长，会产生假bubble
+    //解决办法：让lden_ex改为lden_ex && lden_id 不解决LD-LD类型冒险。
+    //但引入lden_ex && !lden_id无法解决ld-ld型冒险，需要保证ex阶段写addr和读addr不同。
+    //LD-ST冒险不在这解决！！
+    assign bubble_id_ex = (lden_ex && (!lden_id && !sten_id) && reg_wen_ex && (reg_waddr_ex != 5'd0) && ( (reg_waddr_ex == reg1_raddr_id ) || (reg_waddr_ex == reg2_raddr_id)))
+                        || (lden_ex && lden_id && (reg_waddr_ex == reg1_raddr_id))//需停顿一拍，LD的源寄存器地址在reg1,reg2是st用的数据，不需要判断。
+                        ;
+
+    //RTthread：LD-LD型冒险解决：
+    //assign bubble_ex_mem = lden_mem && (reg_waddr_mem != 5'd0) && ( (reg_waddr_mem == reg1_raddr_ex ) || (reg_waddr_mem == reg2_raddr_ex));
+    //ld-st mem2ex
+    assign bp_ld_st_ctrl = (lden_mem && sten_ex )//mem_wb ld / ex_mem st
+                            && reg_wen_mem && (reg_waddr_mem != 5'd0) 
+                            && (reg_waddr_mem != reg1_raddr_ex ) && (reg_waddr_mem == reg2_raddr_ex) ;//st
+    
+
+	
+endmodule
