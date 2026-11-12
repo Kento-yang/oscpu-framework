@@ -221,3 +221,199 @@ Usage: ./emu [OPTION...]
 [DRAMsim3](https://github.com/OpenXiangShan/DRAMsim3)
 
 [AXI4 specification](http://www.gstitt.ece.ufl.edu/courses/fall15/eel4720_5721/labs/refs/AXI4_specification.pdf)
+
+# 复现记录：用带 i-cache/d-cache 的设计跑通 RV 基础用例
+
+本节记录 2026-11-12 在本仓库复现「带 i-cache / d-cache 的 CPU 设计」并通过一生一芯基础用例的完整步骤与原因，便于重复验证。
+
+## 复现结论
+
+| 设计版本 | cpu-tests (33) | riscv-tests (50) | 合计 |
+| --- | --- | --- | --- |
+| `master` 中 `projects/cpu_axi_diff/vsrc`（无 cache） | 26 / 33 | 50 / 50 | 76 / 83 |
+| `origin/CPUwithCache` @ `3cb21fd`（带 i/dcache，本次使用） | 33 / 33 | 50 / 50 | **83 / 83 PASS** |
+
+两次完整回归均为 83 PASS / 0 FAIL，单次耗时约 59 秒。
+
+版本选择原因：
+
+- `master` HEAD（`a8206b1`，提交信息为 “pass dummy!”）的 7 个失败用例为 `bit`、`mov-c`、`movsx`、`string`、`hello-str`、`recursion`、`quick-sort`。失败表现为 difftest 提交 PC/指令流错位，属于该版本 RTL 的提交时序问题；同一环境下带 cache 的 `3cb21fd` 全部通过，可排除框架或环境因素。
+- `origin/CPUwithCache` 最新提交 `887e8ba` 的 `dcache.sv` 残留合并冲突标记（`<<<<<<<`），无法编译；`ace67a5`（中断修复）实测为 77/83，分支/跳转类用例失败。最终选用提交信息为 “add i/dcache and pass cpu/riscv tests”、实测 83/83 的 `3cb21fd`。
+- 该版本尚未实现 `0x7b` 自定义打印指令，因此 `bin/custom-output` 用例不在本次复现范围内。
+
+## 设计源码
+
+`projects/cpu_axi_diff_cache/vsrc/` 是 `origin/CPUwithCache` 提交 `3cb21fd` 的 `projects/cpu_axi_diff/vsrc` 快照，其中 [top_axirw.sv](projects/cpu_axi_diff_cache/vsrc/top_axirw.sv) 实例化了 `icache u_icache` 与 `dcache u_dcache`，即本次测试的是带 i-cache/d-cache 的版本。
+
+该目录可从分支重新生成：
+
+```bash
+git archive 3cb21fd projects/cpu_axi_diff/vsrc | tar -x -C /tmp
+rm -rf projects/cpu_axi_diff_cache/vsrc
+cp -r /tmp/projects/cpu_axi_diff/vsrc projects/cpu_axi_diff_cache/vsrc
+# 当前锁定的 difftest 版本中 DifftestInstrCommit 没有 special 端口
+sed -i '/\.special[[:space:]]*(/d' projects/cpu_axi_diff_cache/vsrc/top.sv
+```
+
+## 环境准备
+
+本次环境为 WSL2 / Ubuntu 22.04 / gcc 11.4。由于 `sudo` 需要密码，所有工具均解包到用户目录 `~/tools`，不修改系统环境。
+
+| 工具 | 版本 | 用途 / 原因 |
+| --- | --- | --- |
+| Verilator | 4.204 | 框架指定版本；Ubuntu 自带的 4.038 对 `alu.sv` 的拼接位选 `{...}[63:0]` 报 `Unsupported: Select of concatenation` |
+| bison / flex / m4 | 3.8.2 / 2.6.4 / 1.4.18 | NEMU 的 kconfig 构建 |
+| readline | 8.1 | NEMU `src/monitor/ui.c` |
+| zlib / SDL2（含运行时依赖） | 1.2.11 / 2.0.20 | difftest 的 `compress.cpp`、`device.cpp`、`vga.cpp` 及 `-lSDL2` 链接 |
+| CMake | 3.22.6 | 编译 DRAMsim3 |
+
+关键安装命令（以 Verilator 为例）：
+
+```bash
+wget -O /tmp/verilator_4_204_amd64.deb \
+  https://gitee.com/oscpu/oscpu-env-setup/attach_files/817254/download/verilator_4_204_amd64.deb
+dpkg -x /tmp/verilator_4_204_amd64.deb ~/tools/verilator-4.204
+ln -s ~/tools/verilator-4.204/usr/bin ~/tools/verilator-4.204/usr/share/verilator/bin
+ln -s ~/tools/verilator-4.204/usr/bin/verilator_bin ~/tools/verilator-4.204/usr/share/verilator/verilator_bin
+```
+
+`~/.local/bin/verilator` 需要指定 `VERILATOR_ROOT`（deb 解包后没有安装到 `/usr`）：
+
+```bash
+#!/bin/bash
+export VERILATOR_ROOT=$HOME/tools/verilator-4.204/usr/share/verilator
+export LD_LIBRARY_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+exec $HOME/tools/verilator-4.204/usr/bin/verilator "$@"
+```
+
+其余 deb 均用 `apt-get download` 下载后 `dpkg -x` 解包到 `~/tools/nemu-deps`，包括：
+`libfl2 bison flex m4 libfl-dev libreadline-dev libreadline8 libtinfo-dev libtinfo6 zlib1g-dev libsdl2-dev libsdl2-2.0-0 libasound2 libpulse0 libxss1 libgbm1 libdecor-0-0 libwayland-server0 libsndfile1 libasyncns0 libflac8 libvorbis0a libvorbisenc2 libopus0 libogg0`。
+其中 `bison` 需要通过包装脚本指定 `BISON_PKGDATADIR` 和 `M4`；`~/.local/bin/ccache` 放一个 `exec "$@"` 空壳，避免 difftest 探测到不存在的 ccache。
+
+每次编译/运行前导入 [env_local.sh](env_local.sh)：
+
+```bash
+source env_local.sh
+```
+
+它等价于：
+
+```bash
+export CPLUS_INCLUDE_PATH=$HOME/tools/nemu-deps/usr/include:$HOME/tools/nemu-deps/usr/include/x86_64-linux-gnu
+export LIBRARY_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu
+export LD_LIBRARY_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+```
+
+> 有 root 权限的机器可以直接 `dpkg -i` / `apt install` 对应包，步骤等价。
+
+## 获取子模块与依赖
+
+```bash
+git submodule update --init --recursive \
+    libraries/DRAMsim3 libraries/NEMU libraries/difftest
+```
+
+本次复现只需要 DRAMsim3、NEMU、difftest；`ysyxSoC` 是 SoC 流程使用的，`cpu_axi_diff` 不依赖它。
+
+编译 NEMU（difftest 的参考模型）：
+
+```bash
+cd libraries/NEMU
+export NEMU_HOME=$PWD
+make riscv64-ysyx-ref_defconfig
+make -j$(nproc)
+# 生成 build/riscv64-nemu-interpreter-so，emu 运行时通过 NEMU_HOME 查找
+```
+
+编译 DRAMsim3（AXI 访存的存储器模型）：
+
+```bash
+cd libraries/DRAMsim3
+mkdir -p build && cd build
+cmake -D COSIM=1 ..
+make -j$(nproc)
+# 生成 build/libdramsim3.a，WITH_DRAMSIM3=1 时链接进 emu
+```
+
+## 框架适配改动
+
+### 1. `build.sh`：支持 SystemVerilog 顶层
+
+原因：difftest 的 Makefile 固定要求 `build/SimTop.v`，而本设计顶层是 `SimTop.sv`；原脚本只把 `*.v` 软链到 build 目录。改动后所有 `*.v` / `*.sv` 都进入 build 目录，并把 `SimTop.sv` 额外链接为 `SimTop.v`：
+
+```diff
+-    create_soft_link $BUILD_PATH $PROJECT_PATH/$VSRC_FOLDER \"*.v\"
++    mkdir -p $BUILD_PATH
++    find -L $BUILD_PATH -maxdepth 1 -type l -delete
++    for FILE in $(find $PROJECT_PATH/$VSRC_FOLDER -type f \( -name "*.v" -o -name "*.sv" \)); do
++        ln -sf "$FILE" "$BUILD_PATH/${FILE##*/}" 1>/dev/null 2>&1
++    done
++    if [[ -f $BUILD_PATH/SimTop.sv ]] && [[ ! -e $BUILD_PATH/SimTop.v ]]; then
++        ln -s SimTop.sv $BUILD_PATH/SimTop.v
++    fi
++    touch -m $BUILD_PATH/SimTop.v 1>/dev/null 2>&1
+```
+
+### 2. `libraries/difftest/verilator.mk`：本地库搜索路径
+
+原因：SDL2 及其依赖解包在 `~/tools/nemu-deps`，不在系统默认库路径。`ld` 不会通过 `LIBRARY_PATH` 解析共享库的间接依赖，需要 `-rpath-link`；同时写入 `-rpath` 方便运行：
+
+```diff
++ifneq ($(LOCAL_LIB_PATH),)
++EMU_LDFLAGS += -Wl,-rpath-link,$(LOCAL_LIB_PATH) -Wl,-rpath,$(LOCAL_LIB_PATH)
++endif
+```
+
+### 3. `.no_commit`：关闭编译后的自动提交
+
+`build.sh` 在编译后会以 `tracer-oscpu2021` 身份自动执行 `git commit`。在仓库根目录创建空文件 `.no_commit` 可关闭该行为，避免复现过程产生无关提交。
+
+## 编译
+
+```bash
+cd ~/oscpu-framework
+source env_local.sh
+./build.sh -e cpu_axi_diff_cache -d -b \
+  -m "WITH_DRAMSIM3=1 LOCAL_LIB_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu"
+```
+
+成功后在 `projects/cpu_axi_diff_cache/build/emu` 生成仿真器。
+
+## 回归测试
+
+```bash
+./build.sh -e cpu_axi_diff_cache -b \
+  -r "non-output/cpu-tests non-output/riscv-tests" \
+  -m "WITH_DRAMSIM3=1 LOCAL_LIB_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu"
+```
+
+预期输出（每个用例一行 PASS）：
+
+```
+PASS = 83, FAIL = 0      # 33 个 cpu-tests + 50 个 riscv-tests
+```
+
+单条用例运行：
+
+```bash
+cd projects/cpu_axi_diff_cache/build
+NEMU_HOME=~/oscpu-framework/libraries/NEMU \
+LD_LIBRARY_PATH=$HOME/tools/nemu-deps/usr/lib/x86_64-linux-gnu \
+./emu -i non-output/cpu-tests/dummy-cpu-tests.bin
+```
+
+输出示例：
+
+```
+Using .../libraries/NEMU/build/riscv64-nemu-interpreter-so for difftest
+The first instruction of core 0 has commited. Difftest enabled.
+Core 0: HIT GOOD TRAP at pc = 0x8000004c
+total guest instructions = 420
+```
+
+## 注意事项
+
+1. 回归脚本以日志中出现 `HIT GOOD TRAP` 作为通过标准；失败用例的日志在 `projects/cpu_axi_diff_cache/build/log/`。
+2. `LD_LIBRARY_PATH` 必须包含 `~/tools/nemu-deps/usr/lib/x86_64-linux-gnu`：emu 的 `RUNPATH` 只覆盖直接依赖（libSDL2），SDL2 的间接依赖（libasound 等）仍依赖该环境变量。
+3. `-r` 会把 `bin/` 下的目录软链到 `build/`，因此单测路径是 `non-output/cpu-tests/xxx.bin`，不是 `cpu-tests/xxx.bin`。
+4. 若使用其他 Verilator 版本遇到 `Unsupported: Select of concatenation`，请切换到 4.204。
